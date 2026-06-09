@@ -42,7 +42,10 @@ jobs:
       - uses: docker/build-push-action@v5
         with:
           context: .
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          # armv7 omitted: uvicorn[standard]'s uvloop/httptools have no armv7
+          # wheels and the slim image has no compiler. amd64 + arm64 cover
+          # x86 boxes and 64-bit Pi-class boards.
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

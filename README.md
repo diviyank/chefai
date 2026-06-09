@@ -37,7 +37,7 @@ Data persists in the named volume `chefai-data` (mounted at `/data`), surviving 
 
 1. Install Docker: `dietpi-software` → install **Docker** + **Docker Compose**.
 2. Copy this repo (or just `docker-compose.yml`) to the DietPi.
-3. The published image is **multi-arch** (`amd64`, `arm64`, `armv7`), so it runs on Pi-class boards:
+3. The published image is **multi-arch** (`amd64`, `arm64`), so it runs on x86 boxes and 64-bit Pi-class boards:
    ```bash
    docker compose pull && docker compose up -d
    ```
