@@ -15,7 +15,7 @@ image, no source or build needed:
 ```bash
 # edit docker-compose.yml: set image: ghcr.io/OWNER/chefai:latest (your GitHub owner)
 docker compose pull && docker compose up -d
-# open http://<host>:8000
+# open http://<host>:1212
 ```
 
 To build from source locally instead, merge the build override:
@@ -29,7 +29,7 @@ docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 | Variable | Default | Purpose |
 |---|---|---|
 | `CHEFAI_DB_PATH` | `/data/chefai.db` | SQLite database location (kept on a volume) |
-| Port | `8000` | Change the left side of `ports:` in compose |
+| Port | `1212` | Change the left side of `ports:` in compose |
 
 Data persists in the named volume `chefai-data` (mounted at `/data`), surviving rebuilds and reboots.
 
@@ -42,7 +42,7 @@ Data persists in the named volume `chefai-data` (mounted at `/data`), surviving 
    docker compose pull && docker compose up -d
    ```
 4. Find the DietPi's LAN address: `hostname -I`.
-5. On your phone (same Wi-Fi), open `http://<dietpi-ip>:8000`.
+5. On your phone (same Wi-Fi), open `http://<dietpi-ip>:1212`.
 6. **Add to home screen** for an app-like icon (Chrome/Safari → Share → "Sur l'écran d'accueil").
 
 ## Backup / restore
@@ -77,5 +77,5 @@ phone, then register a service worker. This is optional and not required for dai
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
 pytest -q
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 1212
 ```
