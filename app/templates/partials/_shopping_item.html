@@ -1,0 +1,8 @@
+<li id="shop-{{ item.id }}" class="flex items-center justify-between bg-white border rounded p-2 {{ 'opacity-50 line-through' if item.checked }}">
+  <span>{{ item.name }}{% if item.qty_text %} <span class="text-slate-500 text-sm">· {{ item.qty_text }}</span>{% endif %}
+    <span class="text-xs text-slate-400">· {{ item.store_type }}</span></span>
+  {% if not item.checked %}
+  <button hx-post="/shopping/{{ item.id }}/check" hx-target="#shop-{{ item.id }}" hx-swap="outerHTML"
+          class="text-green-600 text-sm">Acheté ✓</button>
+  {% endif %}
+</li>

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block header %}Courses{% endblock %}
+{% block content %}
+<a href="/shopping/mode" class="block text-center bg-green-600 text-white rounded px-4 py-2 mb-3">Mode courses 🛒</a>
+<form hx-post="/shopping/add" hx-target="#shop-list" hx-swap="afterbegin"
+      class="space-y-2 bg-white border rounded p-3" hx-on::after-request="this.reset()">
+  <input name="name" required placeholder="Article" class="w-full border rounded p-2">
+  <div class="flex gap-2">
+    <input name="qty_text" placeholder="Qté" class="w-24 border rounded p-2">
+    <select name="store_type" class="flex-1 border rounded p-2">
+      {% for st in store_types %}<option value="{{ st }}">{{ st }}</option>{% endfor %}
+    </select>
+  </div>
+  <button class="bg-green-600 text-white rounded px-4 py-2 w-full">Ajouter</button>
+</form>
+<ul id="shop-list" class="space-y-1 mt-4">
+  {% for item in items %}{% include "partials/_shopping_item.html" %}{% endfor %}
+</ul>
+{% endblock %}

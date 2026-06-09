@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block header %}Mode courses{% endblock %}
+{% block content %}
+<p class="text-xs text-slate-500 mb-2">Fonctionne hors-ligne. Les cases cochées sont enregistrées sur cet appareil.</p>
+<div x-data="shoppingStore('chefai-shop')">
+  {% for store, items in grouped.items() %}
+  <h3 class="text-sm uppercase text-slate-400 mt-3">{{ store }}</h3>
+  <ul class="space-y-1">
+    {% for item in items %}
+    <li class="bg-white border rounded p-3 flex items-center gap-3"
+        :class="checked('{{ item.id }}') && 'opacity-50 line-through'">
+      <input type="checkbox" class="w-6 h-6" :checked="checked('{{ item.id }}')"
+             @change="toggle('{{ item.id }}')">
+      <span class="text-lg">{{ item.name }}{% if item.qty_text %} · {{ item.qty_text }}{% endif %}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endfor %}
+</div>
+{% endblock %}
