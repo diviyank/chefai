@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block header %}{{ recipe.title }}{% endblock %}
+{% block content %}
+<div x-init="keepAwake()">
+  <h2 class="font-semibold">Ingrédients</h2>
+  <ul class="space-y-1">
+    {% for ing in recipe.ingredients_json %}
+    <li><label class="flex items-center gap-2"><input type="checkbox" class="w-5 h-5">
+      {{ ing.name }}{% if ing.qty %} — {{ ing.qty }}{% endif %}</label></li>
+    {% endfor %}
+  </ul>
+  <h2 class="font-semibold mt-4">Étapes</h2>
+  <ol class="space-y-2">
+    {% for step in recipe.steps_json %}
+    <li class="bg-white border rounded p-3">
+      <label class="flex items-start gap-2"><input type="checkbox" class="w-5 h-5 mt-1">
+        <span>{{ step.text }}</span></label>
+      {% if step.duration_seconds %}
+      <div x-data="timer({{ step.duration_seconds }})" class="mt-2 flex items-center gap-2">
+        <span class="font-mono text-lg" x-text="label"></span>
+        <button @click="start()" class="bg-green-600 text-white rounded px-2 py-1 text-xs">Démarrer</button>
+        <button @click="reset()" class="bg-slate-200 rounded px-2 py-1 text-xs">Reset</button>
+      </div>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  <a href="/cookbook/{{ recipe.id }}/finish"
+     class="block text-center bg-green-600 text-white rounded px-4 py-2 mt-4">Terminé — mettre à jour le garde-manger</a>
+  <a href="/cookbook/{{ recipe.id }}" class="block text-center text-slate-500 text-sm mt-2">Annuler</a>
+</div>
+{% endblock %}

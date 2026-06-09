@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block header %}{{ recipe.title }}{% endblock %}
+{% block content %}
+<h2 class="font-semibold">Ingrédients</h2>
+<ul class="list-disc pl-5 text-sm">
+  {% for ing in recipe.ingredients_json %}<li>{{ ing.name }}{% if ing.qty %} — {{ ing.qty }}{% endif %}</li>{% endfor %}
+</ul>
+<a href="/cookbook/{{ recipe.id }}/cook" class="block text-center bg-green-600 text-white rounded px-4 py-2 mt-4">Mode cuisine 👨‍🍳</a>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block header %}Mettre à jour le garde-manger{% endblock %}
+{% block content %}
+<form method="post" action="/cookbook/decrement/apply" class="space-y-2">
+  {% if not proposals %}<p class="text-slate-500 text-sm">Aucun ingrédient correspondant à décrémenter.</p>{% endif %}
+  {% for p in proposals %}
+  <div class="bg-white border rounded p-3">
+    <p class="font-medium">{{ p.name }}</p>
+    {% if p.action == "subtract" %}
+      <label class="text-sm flex items-center gap-2">
+        <input type="radio" name="action_{{ p.pantry_item_id }}" value="subtract" checked>
+        Réduire à <input name="qty_{{ p.pantry_item_id }}" value="{{ p.new_quantity_text }}"
+                         class="border rounded p-1 w-24"></label>
+      <label class="text-sm flex items-center gap-2"><input type="radio" name="action_{{ p.pantry_item_id }}" value="remove"> Épuisé</label>
+      <label class="text-sm flex items-center gap-2"><input type="radio" name="action_{{ p.pantry_item_id }}" value="keep"> Il en reste</label>
+    {% else %}
+      <label class="text-sm flex items-center gap-2">
+        <input type="radio" name="action_{{ p.pantry_item_id }}" value="remove"> Épuisé</label>
+      <label class="text-sm flex items-center gap-2">
+        <input type="radio" name="action_{{ p.pantry_item_id }}" value="keep" checked> Il en reste</label>
+    {% endif %}
+  </div>
+  {% endfor %}
+  <button class="bg-green-600 text-white rounded px-4 py-2 w-full">Mettre à jour</button>
+</form>
+{% endblock %}

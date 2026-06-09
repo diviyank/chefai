@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block header %}Recettes{% endblock %}
+{% block content %}
+<form method="post" action="/cookbook/save" class="space-y-2 bg-white border rounded p-3">
+  <label class="block text-sm font-medium">Enregistrer une recette (coller la réponse de l'IA)
+    <textarea name="raw" rows="5" class="w-full border rounded p-2 text-sm"
+              placeholder="Collez le bloc ```json de la recette"></textarea></label>
+  <button class="bg-green-600 text-white rounded px-4 py-2 w-full">Enregistrer</button>
+</form>
+<ul class="space-y-1 mt-4">
+  {% for r in recipes %}
+  <li class="bg-white border rounded p-3"><a href="/cookbook/{{ r.id }}" class="font-medium">{{ r.title }}</a></li>
+  {% else %}
+  <li class="text-slate-400 text-sm">Aucune recette enregistrée.</li>
+  {% endfor %}
+</ul>
+{% endblock %}
