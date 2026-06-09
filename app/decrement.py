@@ -28,6 +28,7 @@ def parse_quantity(text: Optional[str]):
 
 
 def _format_qty(number: float, unit: str) -> str:
+    number = round(number, 2)
     if number == int(number):
         number = int(number)
     return f"{number} {unit}".strip()
