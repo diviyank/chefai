@@ -1,0 +1,10 @@
+<form hx-post="/cookbook/save" hx-target="#recipe-save" hx-swap="innerHTML" class="space-y-2">
+  <label class="block text-sm font-medium">Recette choisie ? Collez la réponse de l'IA (avec le bloc JSON)
+    pour l'enregistrer et la cuisiner
+    <textarea name="raw" rows="5" class="w-full border rounded p-2 text-sm"
+              placeholder="Collez ici la réponse de l'IA contenant le bloc ```json```">{{ raw or "" }}</textarea></label>
+  {% if error %}
+  <div class="p-2 rounded bg-red-50 text-red-700 text-sm border border-red-200">{{ error }}</div>
+  {% endif %}
+  <button class="bg-green-600 text-white rounded px-4 py-2 w-full">Enregistrer la recette</button>
+</form>

@@ -1,0 +1,10 @@
+{% for r in recipes %}
+<li id="recipe-{{ r.id }}" class="bg-white border rounded p-3 flex items-center justify-between gap-2">
+  <a href="/cookbook/{{ r.id }}" class="font-medium">{{ r.title }}</a>
+  <button hx-post="/cookbook/{{ r.id }}/delete" hx-target="#recipe-{{ r.id }}" hx-swap="outerHTML"
+          hx-confirm="Supprimer « {{ r.title }} » ?"
+          class="text-red-600 text-sm shrink-0" aria-label="Supprimer">Supprimer</button>
+</li>
+{% else %}
+<li class="text-slate-400 text-sm">Aucune recette.</li>
+{% endfor %}
