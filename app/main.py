@@ -1,5 +1,5 @@
 from pathlib import Path
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -31,12 +31,6 @@ def register_routers() -> None:
             continue
         module = import_module(f"app.routers.{name}")
         app.include_router(module.router)
-
-
-@app.get("/")
-def root(request: Request):
-    # Temporary placeholder until home router (Task 20) replaces it.
-    return templates.TemplateResponse("base.html", {"request": request})
 
 
 register_routers()

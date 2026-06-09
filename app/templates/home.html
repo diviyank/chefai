@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block header %}chefai{% endblock %}
+{% block content %}
+<section class="bg-white border rounded p-3">
+  <h2 class="font-semibold">⚠️ À consommer bientôt</h2>
+  {% if expiring %}
+    <ul class="text-sm mt-2 space-y-1">
+      {% for it in expiring %}<li>{{ it.name }} <span class="text-amber-600">· {{ it.expiry_date }}</span></li>{% endfor %}
+    </ul>
+    <form hx-post="/use-it-up" hx-target="#home-result" class="mt-2">
+      <button class="bg-green-600 text-white rounded px-4 py-2 text-sm">Cuisiner avec ces ingrédients</button>
+    </form>
+  {% else %}
+    <p class="text-slate-400 text-sm mt-2">Rien n'expire prochainement.</p>
+  {% endif %}
+</section>
+
+<div class="grid grid-cols-2 gap-2 mt-3">
+  <a href="/cook" class="bg-green-600 text-white rounded p-4 text-center">🍳 Cuisiner</a>
+  <a href="/pantry" class="bg-slate-700 text-white rounded p-4 text-center">🧊 Garde-manger</a>
+</div>
+
+{% if active_plan %}
+<section class="bg-white border rounded p-3 mt-3">
+  <h2 class="font-semibold">Plan en cours</h2>
+  <a href="/plan/{{ active_plan.id }}" class="text-green-700 text-sm">Voir le plan validé →</a>
+</section>
+{% endif %}
+
+<div id="home-result" class="mt-3"></div>
+{% endblock %}
