@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block header %}Cuisiner{% endblock %}
+{% block content %}
+<div x-data="{ tab: 'have' }">
+  <div class="flex gap-2 text-sm">
+    <button @click="tab='have'" :class="tab==='have' ? 'bg-green-600 text-white' : 'bg-slate-200'"
+            class="flex-1 rounded py-2">Avec mes ingrédients</button>
+    <button @click="tab='shop'" :class="tab==='shop' ? 'bg-green-600 text-white' : 'bg-slate-200'"
+            class="flex-1 rounded py-2">Avec petites courses</button>
+    <button @click="tab='plan'" :class="tab==='plan' ? 'bg-green-600 text-white' : 'bg-slate-200'"
+            class="flex-1 rounded py-2">Planifier la semaine</button>
+  </div>
+
+  <!-- HAVE -->
+  <form x-show="tab==='have'" hx-post="/cook/have" hx-target="#result" class="space-y-2 mt-4">
+    <label class="block text-sm">Temps max (min)
+      <input name="max_time" type="number" value="{{ default_time }}" class="w-full border rounded p-2"></label>
+    <label class="block text-sm">Personnes
+      <input name="servings" type="number" value="{{ servings }}" class="w-full border rounded p-2"></label>
+    <label class="block text-sm">Repas
+      <select name="meal" class="w-full border rounded p-2">
+        <option value="indifférent">Indifférent</option><option value="dejeuner">Déjeuner</option>
+        <option value="diner">Dîner</option></select></label>
+    <label class="block text-sm">Envies / précisions
+      <input name="cravings" class="w-full border rounded p-2"></label>
+    <button class="bg-green-600 text-white rounded px-4 py-2 w-full text-sm">Générer le prompt</button>
+  </form>
+
+  <!-- SHOP -->
+  <form x-show="tab==='shop'" hx-post="/cook/shop" hx-target="#result" class="space-y-2 mt-4">
+    <label class="block text-sm">Temps max (min)
+      <input name="max_time" type="number" value="{{ default_time }}" class="w-full border rounded p-2"></label>
+    <label class="block text-sm">Personnes
+      <input name="servings" type="number" value="{{ servings }}" class="w-full border rounded p-2"></label>
+    <label class="block text-sm">Ingrédients à acheter (max)
+      <input name="max_extra" type="number" value="5" class="w-full border rounded p-2"></label>
+    <label class="block text-sm">Envies / précisions
+      <input name="cravings" class="w-full border rounded p-2"></label>
+    <button class="bg-green-600 text-white rounded px-4 py-2 w-full text-sm">Générer le prompt</button>
+  </form>
+
+  <!-- PLAN (form posts to plan router, Task 17) -->
+  <div x-show="tab==='plan'" class="mt-4">{% include "partials/_plan_form.html" ignore missing %}</div>
+
+  <div id="result"></div>
+</div>
+{% endblock %}
