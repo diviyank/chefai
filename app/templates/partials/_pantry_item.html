@@ -1,0 +1,9 @@
+<li id="item-{{ item.id }}" class="flex items-center justify-between bg-white border rounded p-2">
+  <span>
+    <span class="font-medium">{{ item.name }}</span>
+    {% if item.quantity_text %}<span class="text-slate-500 text-sm">· {{ item.quantity_text }}</span>{% endif %}
+    {% if item.expiry_date %}<span class="text-amber-600 text-xs">· {{ item.expiry_date }}</span>{% endif %}
+  </span>
+  <button hx-delete="/pantry/{{ item.id }}" hx-target="#item-{{ item.id }}" hx-swap="outerHTML"
+          class="text-red-500 text-sm">✕</button>
+</li>

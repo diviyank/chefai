@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block header %}Garde-manger{% endblock %}
+{% block content %}
+<form hx-post="/pantry/add" hx-target="#pantry-list" hx-swap="afterbegin"
+      class="space-y-2 bg-white border rounded p-3" hx-on::after-request="this.reset()">
+  <input name="name" required placeholder="Nom (ex. Poulet)" class="w-full border rounded p-2">
+  <div class="flex gap-2">
+    <select name="category" class="flex-1 border rounded p-2">
+      {% for c in categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+    </select>
+    <input name="quantity_text" placeholder="Qté (option.)" class="w-28 border rounded p-2">
+  </div>
+  <input name="expiry_date" type="date" class="w-full border rounded p-2">
+  <button class="bg-green-600 text-white rounded px-4 py-2 w-full">Ajouter</button>
+</form>
+
+<ul id="pantry-list" class="space-y-1 mt-4">
+  {% for category, items in grouped.items() %}
+    <li class="text-xs uppercase text-slate-400 pt-2">{{ category }}</li>
+    {% for item in items %}{% include "partials/_pantry_item.html" %}{% endfor %}
+  {% endfor %}
+</ul>
+{% endblock %}
