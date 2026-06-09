@@ -15,7 +15,11 @@ def test_plan_generate_prompt(client):
     r = client.post("/plan/generate", data={"n_days": "3", "lunch": "on", "dinner": "on",
                                              "leftovers": "on", "servings": "2", "cravings": ""})
     assert r.status_code == 200
-    assert "plans" in r.text.lower()
+    # The prompt is rendered inside a <textarea>, so the schema's literal
+    # double-quotes are HTML-escaped (&#34;); unescape to assert the JSON
+    # schema field actually reached the user-facing prompt.
+    import html
+    assert '"plans"' in html.unescape(r.text)
 
 
 def test_paste_back_stores_three_proposals(client, session):
