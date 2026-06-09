@@ -12,15 +12,20 @@ router = APIRouter()
 
 @router.get("/cookbook", response_class=HTMLResponse)
 def cookbook_page(request: Request, session: Session = Depends(get_session)):
-    recipes = session.exec(select(Recipe).order_by(Recipe.created_at.desc())).all()
-    return templates.TemplateResponse("cookbook.html", {"request": request, "recipes": recipes})
+    return templates.TemplateResponse("cookbook.html",
+                                      {"request": request, "recipes": _filter_recipes(session, "")})
 
 
 @router.post("/cookbook/save")
 def save_recipe(request: Request, session: Session = Depends(get_session), raw: str = Form(...)):
+    is_htmx = bool(request.headers.get("HX-Request"))
     try:
         parsed = rp.parse_recipe_response(raw)
     except rp.ParseError as exc:
+        if is_htmx:  # re-render the box with the message + preserved text so the user can retry
+            return templates.TemplateResponse(
+                "partials/_recipe_save_box.html",
+                {"request": request, "error": str(exc), "raw": raw})
         return templates.TemplateResponse("partials/_parse_error.html",
                                           {"request": request, "message": str(exc)})
     recipe = Recipe(
@@ -29,10 +34,38 @@ def save_recipe(request: Request, session: Session = Depends(get_session), raw: 
         steps_json=[s.model_dump() for s in parsed.steps],
         source=parsed.source, tags_json=parsed.tags)
     session.add(recipe); session.commit(); session.refresh(recipe)
-    if request.headers.get("HX-Request"):  # saved inline from the cook page → stay put
+    if is_htmx:  # saved inline from the cook page → replace the form with a confirmation
         return templates.TemplateResponse("partials/_recipe_saved.html",
                                           {"request": request, "recipe": recipe})
     return RedirectResponse("/cookbook", status_code=303)
+
+
+@router.get("/cookbook/search", response_class=HTMLResponse)
+def search_recipes(request: Request, q: str = "", session: Session = Depends(get_session)):
+    recipes = _filter_recipes(session, q)
+    return templates.TemplateResponse("partials/_recipe_list.html",
+                                      {"request": request, "recipes": recipes})
+
+
+@router.post("/cookbook/{recipe_id}/delete")
+def delete_recipe(recipe_id: int, request: Request, session: Session = Depends(get_session)):
+    recipe = session.get(Recipe, recipe_id)
+    if recipe is not None:
+        session.delete(recipe); session.commit()
+    if request.headers.get("HX-Request"):  # remove just the row from the list
+        return HTMLResponse("")
+    return RedirectResponse("/cookbook", status_code=303)
+
+
+def _filter_recipes(session: Session, q: str) -> list[Recipe]:
+    """Recipes newest-first, optionally filtered by a case-insensitive title/tag match."""
+    recipes = session.exec(select(Recipe).order_by(Recipe.created_at.desc())).all()
+    needle = q.strip().lower()
+    if not needle:
+        return list(recipes)
+    return [r for r in recipes
+            if needle in r.title.lower()
+            or any(needle in str(tag).lower() for tag in (r.tags_json or []))]
 
 
 @router.get("/cookbook/{recipe_id}", response_class=HTMLResponse)

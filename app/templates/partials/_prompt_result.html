@@ -1,19 +1,12 @@
 <div class="mt-4">
   <textarea id="prompt-out" rows="12" readonly
             class="w-full border rounded p-2 text-sm font-mono bg-slate-50">{{ prompt }}</textarea>
-  <button onclick="copyText('prompt-out')"
+  <button type="button" onclick="copyText('prompt-out', this)"
           class="mt-2 bg-green-600 text-white rounded px-4 py-2 w-full">Copier le prompt</button>
 
   {% if show_recipe_save %}
-  <div class="mt-6 border-t pt-4">
-    <form hx-post="/cookbook/save" hx-target="#recipe-save-result" hx-swap="innerHTML" class="space-y-2">
-      <label class="block text-sm font-medium">Recette choisie ? Collez la réponse de l'IA (avec le bloc JSON)
-        pour l'enregistrer et la cuisiner
-        <textarea name="raw" rows="5" class="w-full border rounded p-2 text-sm"
-                  placeholder="Collez ici la réponse de l'IA contenant le bloc ```json```"></textarea></label>
-      <button class="bg-green-600 text-white rounded px-4 py-2 w-full">Enregistrer la recette</button>
-    </form>
-    <div id="recipe-save-result"></div>
+  <div id="recipe-save" class="mt-6 border-t pt-4">
+    {% include "partials/_recipe_save_box.html" %}
   </div>
   {% endif %}
 </div>

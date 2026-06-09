@@ -29,10 +29,37 @@ def test_htmx_save_returns_inline_success_with_cook_link(client, session):
     assert recipe.title == "Omelette"
     assert f"/cookbook/{recipe.id}/cook" in r.text  # one-tap into cooking mode
 
+def test_htmx_save_success_replaces_form_to_prevent_duplicates(client):
+    """On success the paste form is gone (replaced by confirmation) so it can't be re-submitted."""
+    r = client.post("/cookbook/save", data={"raw": RECIPE_JSON},
+                    headers={"HX-Request": "true"})
+    assert 'name="raw"' not in r.text  # no lingering textarea to resubmit
+    assert "enregistr" in r.text.lower()  # explicit confirmation
+
 def test_htmx_save_bad_input_shows_error_inline(client):
     r = client.post("/cookbook/save", data={"raw": "rien"},
                     headers={"HX-Request": "true"})
     assert "réponse non reconnue" in r.text.lower()
+    assert 'name="raw"' in r.text  # form re-rendered so the user can fix and retry
+
+def test_delete_recipe_removes_it(client, session):
+    client.post("/cookbook/save", data={"raw": RECIPE_JSON})
+    recipe = session.exec(select(Recipe)).one()
+    r = client.post(f"/cookbook/{recipe.id}/delete", headers={"HX-Request": "true"})
+    assert r.status_code == 200
+    assert session.get(Recipe, recipe.id) is None
+
+def test_cookbook_search_filters_by_title(client, session):
+    client.post("/cookbook/save", data={"raw": RECIPE_JSON})  # Omelette
+    other = RECIPE_JSON.replace("Omelette", "Soupe de poireaux")
+    client.post("/cookbook/save", data={"raw": other})
+    r = client.get("/cookbook/search", params={"q": "soupe"})
+    assert "Soupe de poireaux" in r.text
+    assert "Omelette" not in r.text
+
+def test_cookbook_page_has_search_bar(client):
+    r = client.get("/cookbook")
+    assert "/cookbook/search" in r.text
 
 def test_cook_mode_lists_steps(client, session):
     client.post("/cookbook/save", data={"raw": RECIPE_JSON})

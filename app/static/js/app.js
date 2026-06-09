@@ -1,11 +1,26 @@
+// iOS home-screen (standalone) web apps open same-origin <a> links in a NEW Safari tab,
+// breaking out of the app. Intercept those clicks and navigate in-place instead.
+if (window.navigator.standalone === true) {
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest && e.target.closest("a[href]");
+    if (!a || a.hasAttribute("target")) return;
+    const url = new URL(a.getAttribute("href"), location.href);
+    if (url.origin === location.origin) {
+      e.preventDefault();
+      location.href = url.href;
+    }
+  });
+}
+
 // Clipboard copy for generated prompts.
 // navigator.clipboard only exists in secure contexts (HTTPS/localhost); chefai is served
 // over plain HTTP on the LAN, so fall back to a textarea selection + execCommand("copy").
-function copyText(id) {
+// btn is passed explicitly: iOS Safari doesn't focus buttons on tap, so document.activeElement
+// would misidentify the button and the confirmation flash would corrupt the wrong element.
+function copyText(id, btn) {
   const el = document.getElementById(id);
   if (!el) return;
   const text = el.value || el.textContent;
-  const btn = document.activeElement;
   const flash = (msg) => {
     if (!btn) return;
     const old = btn.textContent;

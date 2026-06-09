@@ -7,11 +7,11 @@
               placeholder="Collez le bloc ```json de la recette"></textarea></label>
   <button class="bg-green-600 text-white rounded px-4 py-2 w-full">Enregistrer</button>
 </form>
-<ul class="space-y-1 mt-4">
-  {% for r in recipes %}
-  <li class="bg-white border rounded p-3"><a href="/cookbook/{{ r.id }}" class="font-medium">{{ r.title }}</a></li>
-  {% else %}
-  <li class="text-slate-400 text-sm">Aucune recette enregistrée.</li>
-  {% endfor %}
+<input type="search" name="q" placeholder="Rechercher une recette…"
+       class="w-full border rounded p-2 text-sm mt-4"
+       hx-get="/cookbook/search" hx-trigger="input changed delay:200ms, search"
+       hx-target="#recipe-list">
+<ul id="recipe-list" class="space-y-1 mt-2">
+  {% include "partials/_recipe_list.html" %}
 </ul>
 {% endblock %}
