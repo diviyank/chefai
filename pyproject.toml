@@ -17,6 +17,11 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "httpx>=0.27"]
 
+# Only the app/ package ships; otherwise setuptools flat-layout discovery
+# trips over the runtime-created data/ directory ("Multiple top-level packages").
+[tool.setuptools]
+packages = ["app"]
+
 [tool.pytest.ini_options]
 addopts = "-q"
 pythonpath = ["."]
