@@ -1,0 +1,4 @@
+<button hx-post="/settings/{{ kind }}/{{ item.id }}/toggle" hx-swap="outerHTML"
+        class="px-3 py-1 rounded-full text-sm {{ 'bg-green-600 text-white' if item.enabled else 'bg-slate-200 text-slate-600' }}">
+  {{ item.name }}
+</button>

@@ -25,8 +25,11 @@ def _startup() -> None:
 
 
 def register_routers() -> None:
-    from .routers import home, pantry, generate, plan, shopping, cookbook, settings
-    for module in (home, pantry, generate, plan, shopping, cookbook, settings):
+    from importlib import import_module
+    for name in ("home", "pantry", "generate", "plan", "shopping", "cookbook", "settings"):
+        if not (BASE_DIR / "routers" / f"{name}.py").exists():
+            continue
+        module = import_module(f"app.routers.{name}")
         app.include_router(module.router)
 
 
@@ -34,3 +37,6 @@ def register_routers() -> None:
 def root(request: Request):
     # Temporary placeholder until home router (Task 20) replaces it.
     return templates.TemplateResponse("base.html", {"request": request})
+
+
+register_routers()

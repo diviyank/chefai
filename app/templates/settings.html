@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block header %}Réglages{% endblock %}
+{% block content %}
+<form method="post" action="/settings" class="space-y-3">
+  <h2 class="font-semibold">Profil du foyer</h2>
+  <label class="block text-sm">Nombre de personnes
+    <input name="household_size" type="number" value="{{ settings.household_size }}" class="mt-1 w-full border rounded p-2">
+  </label>
+  <label class="block text-sm">Temps de cuisson par défaut (min)
+    <input name="default_cook_time" type="number" value="{{ settings.default_cook_time }}" class="mt-1 w-full border rounded p-2">
+  </label>
+  <label class="block text-sm">Restrictions alimentaires
+    <textarea name="restrictions" class="mt-1 w-full border rounded p-2">{{ settings.restrictions }}</textarea>
+  </label>
+  <label class="block text-sm">Allergies
+    <textarea name="allergies" class="mt-1 w-full border rounded p-2">{{ settings.allergies }}</textarea>
+  </label>
+  <label class="block text-sm">Aliments non appréciés
+    <textarea name="dislikes" class="mt-1 w-full border rounded p-2">{{ settings.dislikes }}</textarea>
+  </label>
+  <label class="block text-sm">Habitudes de consommation / objectifs de régime
+    <textarea name="consumption_habits" class="mt-1 w-full border rounded p-2">{{ settings.consumption_habits }}</textarea>
+  </label>
+  <label class="block text-sm">Notes équipement
+    <textarea name="tools_notes" class="mt-1 w-full border rounded p-2">{{ settings.tools_notes }}</textarea>
+  </label>
+  <label class="block text-sm">Notes compétences
+    <textarea name="skills_notes" class="mt-1 w-full border rounded p-2">{{ settings.skills_notes }}</textarea>
+  </label>
+  <label class="block text-sm">Langue
+    <select name="language" class="mt-1 w-full border rounded p-2">
+      <option value="fr" {{ 'selected' if settings.language=='fr' }}>Français</option>
+    </select>
+  </label>
+  <button class="bg-green-600 text-white rounded px-4 py-2">Enregistrer</button>
+</form>
+
+<h2 class="font-semibold mt-6">Mes outils</h2>
+<div class="flex flex-wrap gap-2 mt-2">
+  {% for tool in tools %}
+    {% with item=tool, kind="tools" %}{% include "partials/_toggle.html" %}{% endwith %}
+  {% endfor %}
+</div>
+
+<h2 class="font-semibold mt-6">Mes compétences</h2>
+<div class="flex flex-wrap gap-2 mt-2">
+  {% for skill in skills %}
+    {% with item=skill, kind="skills" %}{% include "partials/_toggle.html" %}{% endwith %}
+  {% endfor %}
+</div>
+{% endblock %}
