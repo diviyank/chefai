@@ -1,0 +1,12 @@
+services:
+  chefai:
+    image: ghcr.io/OWNER/chefai:latest   # replace OWNER with your GitHub owner/org
+    container_name: chefai
+    ports:
+      - "8000:8000"
+    volumes:
+      - chefai-data:/data
+    restart: unless-stopped
+
+volumes:
+  chefai-data:
