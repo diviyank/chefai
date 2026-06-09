@@ -36,5 +36,6 @@ def use_it_up(request: Request, session: Session = Depends(get_session)):
     names = [i.name for i in _expiring(session)]
     prompt = pb.build_use_it_up(profile, tools, skills, pantry, names,
                                 {"max_time": profile["default_cook_time"]})
-    return templates.TemplateResponse("partials/_prompt_result.html",
-                                      {"request": request, "prompt": prompt})
+    return templates.TemplateResponse(
+        "partials/_prompt_result.html",
+        {"request": request, "prompt": prompt, "show_recipe_save": True})

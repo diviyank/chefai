@@ -62,6 +62,18 @@ def base_context(profile: dict, tools: list[str], skills: list[str]) -> str:
     )
 
 
+def _choose_to_cook_section() -> str:
+    """Asks the LLM to emit the recipe JSON once the user picks a recipe, so it can be
+    saved to the cookbook and used in cooking mode (pantry decrement)."""
+    return (
+        "\n## Quand je choisis une recette à cuisiner\n"
+        "Dis-moi simplement laquelle tu recommandes, puis quand je t'indique mon choix, "
+        "termine ta réponse par un bloc ```json``` (pour l'enregistrer et activer le mode "
+        "cuisine) respectant EXACTEMENT ce schéma :\n"
+        f"```json\n{RECIPE_JSON_SCHEMA}\n```"
+    )
+
+
 def _pantry_section(pantry: list[dict]) -> str:
     main, staples = render_pantry(pantry)
     return (
@@ -84,6 +96,7 @@ def build_cook_with_have(profile, tools, skills, pantry, params) -> str:
         f"- Repas : {params.get('meal', 'indifférent')}\n"
         f"- Envies / précisions : {params.get('cravings') or 'aucune'}\n"
         "Pour chaque idée : titre, ingrédients utilisés, et étapes principales."
+        f"{_choose_to_cook_section()}"
     )
 
 
@@ -98,6 +111,7 @@ def build_cook_with_shop(profile, tools, skills, pantry, params) -> str:
         f"- Temps de cuisson maximum : {params.get('max_time', 30)} minutes\n"
         f"- Pour {params.get('servings', profile.get('household_size', 2))} personnes\n"
         f"- Envies / précisions : {params.get('cravings') or 'aucune'}\n"
+        f"{_choose_to_cook_section()}"
     )
 
 
@@ -132,6 +146,7 @@ def build_use_it_up(profile, tools, skills, pantry, expiring_names, params) -> s
         f"bientôt périmés / à consommer : {', '.join(expiring_names)}.\n"
         f"- Temps de cuisson maximum : {params.get('max_time', 30)} minutes\n"
         "Tu peux compléter avec les autres ingrédients disponibles."
+        f"{_choose_to_cook_section()}"
     )
 
 

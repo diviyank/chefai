@@ -83,5 +83,6 @@ def meal_prompt(meal_id: int, request: Request, session: Session = Depends(get_s
         profile, tools, skills,
         {"title": meal.title, "ingredients": meal.ingredients_json},
         servings=session.get(Settings, 1).household_size)
-    return templates.TemplateResponse("partials/_prompt_result.html",
-                                      {"request": request, "prompt": prompt})
+    return templates.TemplateResponse(
+        "partials/_prompt_result.html",
+        {"request": request, "prompt": prompt, "show_recipe_save": True})

@@ -27,10 +27,14 @@ def load_state(session: Session):
     return profile, tools, skills, pantry
 
 
-def _prompt_response(request: Request, prompt: str):
-    """Return a rendered prompt result partial."""
-    return templates.TemplateResponse("partials/_prompt_result.html",
-                                      {"request": request, "prompt": prompt})
+def _prompt_response(request: Request, prompt: str, show_recipe_save: bool = False):
+    """Return a rendered prompt result partial.
+
+    Suggestion flows set show_recipe_save so the user can paste a chosen recipe back
+    and save it to the cookbook (enabling cook mode + pantry decrement)."""
+    return templates.TemplateResponse(
+        "partials/_prompt_result.html",
+        {"request": request, "prompt": prompt, "show_recipe_save": show_recipe_save})
 
 
 @router.get("/cook", response_class=HTMLResponse)
@@ -51,7 +55,7 @@ def gen_have(request: Request, session: Session = Depends(get_session),
     prompt = pb.build_cook_with_have(profile, tools, skills, pantry,
                                      {"max_time": max_time, "cravings": cravings,
                                       "servings": servings, "meal": meal})
-    return _prompt_response(request, prompt)
+    return _prompt_response(request, prompt, show_recipe_save=True)
 
 
 @router.post("/cook/shop", response_class=HTMLResponse)
@@ -63,4 +67,4 @@ def gen_shop(request: Request, session: Session = Depends(get_session),
     prompt = pb.build_cook_with_shop(profile, tools, skills, pantry,
                                      {"max_time": max_time, "cravings": cravings,
                                       "servings": servings, "max_extra": max_extra})
-    return _prompt_response(request, prompt)
+    return _prompt_response(request, prompt, show_recipe_save=True)

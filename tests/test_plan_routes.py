@@ -20,6 +20,8 @@ def test_plan_generate_prompt(client):
     # schema field actually reached the user-facing prompt.
     import html
     assert '"plans"' in html.unescape(r.text)
+    # The plan flow has its own plan paste-back; it must NOT show the recipe save box.
+    assert "/cookbook/save" not in r.text
 
 
 def test_paste_back_stores_three_proposals(client, session):

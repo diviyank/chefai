@@ -1,11 +1,29 @@
 // Clipboard copy for generated prompts.
+// navigator.clipboard only exists in secure contexts (HTTPS/localhost); chefai is served
+// over plain HTTP on the LAN, so fall back to a textarea selection + execCommand("copy").
 function copyText(id) {
   const el = document.getElementById(id);
   if (!el) return;
-  navigator.clipboard.writeText(el.value || el.textContent).then(() => {
-    const btn = document.activeElement;
-    if (btn) { const old = btn.textContent; btn.textContent = "Copié ✓"; setTimeout(() => btn.textContent = old, 1500); }
-  });
+  const text = el.value || el.textContent;
+  const btn = document.activeElement;
+  const flash = (msg) => {
+    if (!btn) return;
+    const old = btn.textContent;
+    btn.textContent = msg;
+    setTimeout(() => { btn.textContent = old; }, 1500);
+  };
+  const fallback = () => {
+    el.focus();
+    el.select();
+    el.setSelectionRange(0, text.length);  // mobile Safari/Firefox need an explicit range
+    const ok = document.execCommand("copy");
+    flash(ok ? "Copié ✓" : "Copie impossible — sélectionnez puis copiez à la main");
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(() => flash("Copié ✓"), fallback);
+  } else {
+    fallback();
+  }
 }
 
 // Cooking-mode step timer (Alpine component).

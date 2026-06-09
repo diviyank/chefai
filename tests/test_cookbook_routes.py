@@ -20,6 +20,20 @@ def test_save_recipe_bad_input_shows_error(client):
     r = client.post("/cookbook/save", data={"raw": "rien"})
     assert "réponse non reconnue" in r.text.lower()
 
+def test_htmx_save_returns_inline_success_with_cook_link(client, session):
+    """Saving from the cook page (HTMX) stays inline and links straight into cook mode."""
+    r = client.post("/cookbook/save", data={"raw": RECIPE_JSON},
+                    headers={"HX-Request": "true"})
+    assert r.status_code == 200
+    recipe = session.exec(select(Recipe)).one()
+    assert recipe.title == "Omelette"
+    assert f"/cookbook/{recipe.id}/cook" in r.text  # one-tap into cooking mode
+
+def test_htmx_save_bad_input_shows_error_inline(client):
+    r = client.post("/cookbook/save", data={"raw": "rien"},
+                    headers={"HX-Request": "true"})
+    assert "réponse non reconnue" in r.text.lower()
+
 def test_cook_mode_lists_steps(client, session):
     client.post("/cookbook/save", data={"raw": RECIPE_JSON})
     recipe = session.exec(select(Recipe)).first()

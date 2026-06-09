@@ -23,3 +23,13 @@ def test_generate_shop_includes_extra_limit(client):
         "max_time": "30", "cravings": "", "servings": "2", "max_extra": "4"
     })
     assert "4" in r.text
+
+
+def test_cook_suggestions_offer_recipe_save_box(client):
+    """After getting suggestions the user can paste a chosen recipe to save + cook it."""
+    have = client.post("/cook/have", data={
+        "max_time": "25", "cravings": "", "servings": "2", "meal": "diner"})
+    shop = client.post("/cook/shop", data={
+        "max_time": "30", "cravings": "", "servings": "2", "max_extra": "4"})
+    for r in (have, shop):
+        assert "/cookbook/save" in r.text

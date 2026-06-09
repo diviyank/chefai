@@ -28,7 +28,10 @@ def save_recipe(request: Request, session: Session = Depends(get_session), raw: 
         ingredients_json=[i.model_dump() for i in parsed.ingredients],
         steps_json=[s.model_dump() for s in parsed.steps],
         source=parsed.source, tags_json=parsed.tags)
-    session.add(recipe); session.commit()
+    session.add(recipe); session.commit(); session.refresh(recipe)
+    if request.headers.get("HX-Request"):  # saved inline from the cook page → stay put
+        return templates.TemplateResponse("partials/_recipe_saved.html",
+                                          {"request": request, "recipe": recipe})
     return RedirectResponse("/cookbook", status_code=303)
 
 

@@ -48,6 +48,27 @@ def test_use_it_up_lists_expiring_items():
     assert "Poulet" in prompt
     assert "périm" in prompt.lower() or "consommer" in prompt.lower()
 
+def _asserts_recipe_json_for_cook_mode(prompt):
+    """A suggestion prompt must ask the LLM to emit the recipe JSON once a recipe is chosen,
+    so it can be saved and cooked (cook mode + pantry decrement)."""
+    assert "json" in prompt.lower()
+    assert '"steps"' in prompt and '"ingredients"' in prompt  # RECIPE_JSON_SCHEMA fields
+    assert "chois" in prompt.lower()  # "quand je choisis la recette..."
+
+def test_cook_with_have_requests_recipe_json_on_choice():
+    prompt = pb.build_cook_with_have(PROFILE, TOOLS, SKILLS, PANTRY,
+                                     {"max_time": 25, "cravings": "épicé", "servings": 2, "meal": "diner"})
+    _asserts_recipe_json_for_cook_mode(prompt)
+
+def test_cook_with_shop_requests_recipe_json_on_choice():
+    prompt = pb.build_cook_with_shop(PROFILE, TOOLS, SKILLS, PANTRY,
+                                     {"max_time": 30, "cravings": "", "servings": 2, "max_extra": 4})
+    _asserts_recipe_json_for_cook_mode(prompt)
+
+def test_use_it_up_requests_recipe_json_on_choice():
+    prompt = pb.build_use_it_up(PROFILE, TOOLS, SKILLS, PANTRY, ["Poulet"], {"max_time": 30})
+    _asserts_recipe_json_for_cook_mode(prompt)
+
 def test_meal_cooking_prompt_includes_title_and_servings():
     prompt = pb.build_meal_cooking(PROFILE, TOOLS, SKILLS,
                                    {"title": "Curry de lentilles", "ingredients": ["lentilles", "lait de coco"]}, servings=2)
