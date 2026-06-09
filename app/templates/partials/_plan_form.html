@@ -1,0 +1,21 @@
+<form hx-post="/plan/generate" hx-target="#result" class="space-y-2">
+  <label class="block text-sm">Nombre de jours
+    <input name="n_days" type="number" value="3" class="w-full border rounded p-2"></label>
+  <div class="flex gap-4 text-sm">
+    <label><input type="checkbox" name="lunch" checked> Déjeuner</label>
+    <label><input type="checkbox" name="dinner" checked> Dîner</label>
+    <label><input type="checkbox" name="leftovers" checked> Restes</label>
+  </div>
+  <label class="block text-sm">Personnes
+    <input name="servings" type="number" value="2" class="w-full border rounded p-2"></label>
+  <label class="block text-sm">Envies / précisions
+    <input name="cravings" class="w-full border rounded p-2"></label>
+  <button class="bg-green-600 text-white rounded px-4 py-2 w-full text-sm">Générer le prompt</button>
+</form>
+
+<form hx-post="/plan/parse" hx-target="#result" class="space-y-2 mt-4 border-t pt-4">
+  <label class="block text-sm font-medium">Coller la réponse de l'IA
+    <textarea name="raw" rows="6" class="w-full border rounded p-2 text-sm"
+              placeholder="Collez ici le bloc ```json renvoyé par l'IA"></textarea></label>
+  <button class="bg-slate-700 text-white rounded px-4 py-2 w-full text-sm">Analyser la réponse</button>
+</form>

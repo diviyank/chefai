@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block header %}Plan validé{% endblock %}
+{% block content %}
+<div class="space-y-2">
+  {% for meal in meals %}
+  <div class="bg-white border rounded p-3 flex items-center justify-between">
+    <span><span class="text-xs text-slate-400">J{{ meal.day_index }} · {{ meal.slot }}</span><br>{{ meal.title }}</span>
+    <button hx-get="/plan/meal/{{ meal.id }}/prompt" hx-target="#meal-result"
+            class="bg-green-600 text-white rounded px-3 py-1 text-sm">Prompt de cuisine</button>
+  </div>
+  {% endfor %}
+  <div id="meal-result"></div>
+  <a href="/shopping" class="block text-center bg-slate-700 text-white rounded px-4 py-2 text-sm mt-3">Voir la liste de courses</a>
+</div>
+{% endblock %}
