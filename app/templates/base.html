@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block title %}chefai{% endblock %}</title>
+  <link rel="manifest" href="/static/manifest.webmanifest">
+  <link rel="stylesheet" href="/static/css/app.css">
+  <script src="/static/vendor/htmx.min.js" defer></script>
+  <script src="/static/vendor/alpine.min.js" defer></script>
+  <script src="/static/js/app.js" defer></script>
+</head>
+<body class="bg-slate-50 text-slate-900 pb-20">
+  <header class="bg-green-600 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+    <span class="font-bold text-lg">{% block header %}chefai{% endblock %}</span>
+    <a href="/settings" aria-label="Réglages" class="text-xl">⚙️</a>
+  </header>
+  <main class="px-4 py-4 max-w-xl mx-auto">
+    {% block content %}{% endblock %}
+  </main>
+  {% include "_nav.html" %}
+</body>
+</html>
