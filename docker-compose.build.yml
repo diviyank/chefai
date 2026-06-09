@@ -1,3 +1,7 @@
 services:
   chefai:
     build: .
+    # Override the published-image name so building from source works without
+    # first editing the OWNER placeholder in docker-compose.yml (uppercase
+    # repository names are rejected by Docker as image tags).
+    image: chefai:local

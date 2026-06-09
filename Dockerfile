@@ -7,9 +7,13 @@ COPY tailwind.config.js ./
 COPY app/templates ./app/templates
 COPY app/static/css/input.css ./app/static/css/input.css
 COPY app/static/js ./app/static/js
+# Pin Tailwind v3: the v3-style input.css (@tailwind directives) + tailwind.config.js
+# only produce theme color utilities (bg-green-600, text-amber-600, …) under v3.
+# "latest" now resolves to v4, which silently drops those color utilities.
+ARG TAILWIND_VERSION=v3.4.17
 RUN case "$TARGETARCH" in \
       amd64) TWARCH=x64 ;; arm64) TWARCH=arm64 ;; arm) TWARCH=armv7 ;; *) TWARCH=x64 ;; esac && \
-    curl -sL "https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-linux-${TWARCH}" -o /usr/local/bin/tailwindcss && \
+    curl -sL "https://github.com/tailwindlabs/tailwindcss/releases/download/${TAILWIND_VERSION}/tailwindcss-linux-${TWARCH}" -o /usr/local/bin/tailwindcss && \
     chmod +x /usr/local/bin/tailwindcss && \
     tailwindcss -c tailwind.config.js -i app/static/css/input.css -o /build/app.css --minify
 
