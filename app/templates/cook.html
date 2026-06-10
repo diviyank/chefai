@@ -1,6 +1,17 @@
 {% extends "base.html" %}
 {% block header %}Cuisiner{% endblock %}
 {% block content %}
+<style>
+  /* Self-contained so it animates without depending on the Tailwind build. */
+  .chefai-spinner {
+    width: 1rem; height: 1rem; border-radius: 9999px;
+    border: 2px solid #cbd5e1; border-top-color: #16a34a;
+    display: inline-block; animation: chefai-spin .7s linear infinite;
+  }
+  @keyframes chefai-spin { to { transform: rotate(360deg); } }
+  /* htmx sets [disabled] on the button while the request is in flight. */
+  button[disabled] { opacity: .6; cursor: not-allowed; }
+</style>
 <div x-data="{ tab: 'have' }">
   <div class="flex gap-2 text-sm">
     <button @click="tab='have'" :class="tab==='have' ? 'bg-green-600 text-white' : 'bg-slate-200'"
@@ -12,7 +23,7 @@
   </div>
 
   <!-- HAVE -->
-  <form x-show="tab==='have'" hx-post="/cook/have" hx-target="#result" hx-indicator="#llm-spinner" class="space-y-2 mt-4">
+  <form x-show="tab==='have'" hx-post="/cook/have" hx-target="#result" hx-indicator="#llm-spinner" hx-disabled-elt="find button" class="space-y-2 mt-4">
     <label class="block text-sm">Temps max (min)
       <input name="max_time" type="number" value="{{ default_time }}" class="w-full border rounded p-2"></label>
     <label class="block text-sm">Personnes
@@ -27,7 +38,7 @@
   </form>
 
   <!-- SHOP -->
-  <form x-show="tab==='shop'" hx-post="/cook/shop" hx-target="#result" hx-indicator="#llm-spinner" class="space-y-2 mt-4">
+  <form x-show="tab==='shop'" hx-post="/cook/shop" hx-target="#result" hx-indicator="#llm-spinner" hx-disabled-elt="find button" class="space-y-2 mt-4">
     <label class="block text-sm">Temps max (min)
       <input name="max_time" type="number" value="{{ default_time }}" class="w-full border rounded p-2"></label>
     <label class="block text-sm">Personnes
@@ -42,7 +53,10 @@
   <!-- PLAN (form posts to plan router, Task 17) -->
   <div x-show="tab==='plan'" class="mt-4">{% include "partials/_plan_form.html" ignore missing %}</div>
 
-  <div id="llm-spinner" class="htmx-indicator text-center text-sm text-slate-500 mt-4">⏳ Claude réfléchit…</div>
+  <div id="llm-spinner" class="htmx-indicator flex items-center justify-center gap-2 text-sm text-slate-500 mt-4">
+    <span class="chefai-spinner" aria-hidden="true"></span>
+    <span>Claude réfléchit…</span>
+  </div>
   <div id="result"></div>
 </div>
 {% endblock %}

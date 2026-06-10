@@ -4,6 +4,11 @@ import os
 
 DEFAULT_MODEL = "claude-sonnet-4-6"
 MAX_TOKENS = 8000
+# Wall-clock guard (seconds). Streaming read timeouts are per-chunk, so a stalled
+# stream would otherwise block the request forever and the browser would spin with
+# no result. On timeout the SDK raises -> LLMError -> the route shows the copy-paste
+# prompt fallback. Override with CHEFAI_LLM_TIMEOUT.
+DEFAULT_TIMEOUT_S = 120.0
 
 
 class LLMError(RuntimeError):
@@ -18,6 +23,10 @@ def get_model() -> str:
     return os.environ.get("CHEFAI_LLM_MODEL", DEFAULT_MODEL)
 
 
+def get_timeout() -> float:
+    return float(os.environ.get("CHEFAI_LLM_TIMEOUT", DEFAULT_TIMEOUT_S))
+
+
 def _client():
     from anthropic import Anthropic
     return Anthropic()
@@ -28,7 +37,8 @@ def complete(prompt: str) -> str:
     if not is_configured():
         raise LLMError("ANTHROPIC_API_KEY non configurée")
     try:
-        with _client().messages.stream(
+        client = _client().with_options(timeout=get_timeout())
+        with client.messages.stream(
             model=get_model(),
             max_tokens=MAX_TOKENS,
             thinking={"type": "adaptive"},

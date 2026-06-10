@@ -48,7 +48,15 @@ class _FakeMessages:
 
 
 class _FakeClient:
-    messages = _FakeMessages()
+    """Records the options the SDK client was configured with (e.g. timeout)."""
+
+    def __init__(self):
+        self.messages = _FakeMessages()
+        self.options = {}
+
+    def with_options(self, **kwargs):
+        self.options.update(kwargs)
+        return self
 
 
 def test_complete_returns_text(monkeypatch):
@@ -57,13 +65,27 @@ def test_complete_returns_text(monkeypatch):
     assert llm_client.complete("salut") == "réponse"
 
 
+def test_complete_applies_wall_clock_timeout(monkeypatch):
+    """A timeout must be set so a stalled stream degrades instead of hanging forever."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
+    monkeypatch.setenv("CHEFAI_LLM_TIMEOUT", "5")
+    fake = _FakeClient()
+    monkeypatch.setattr(llm_client, "_client", lambda: fake)
+    llm_client.complete("salut")
+    assert fake.options.get("timeout") == 5.0
+
+
 class _BoomMessages:
     def stream(self, **kwargs):
         raise RuntimeError("network down")
 
 
 class _BoomClient:
-    messages = _BoomMessages()
+    def __init__(self):
+        self.messages = _BoomMessages()
+
+    def with_options(self, **kwargs):
+        return self
 
 
 def test_complete_wraps_sdk_failure_as_llm_error(monkeypatch):
