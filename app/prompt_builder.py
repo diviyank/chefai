@@ -28,6 +28,38 @@ RECIPE_JSON_SCHEMA = (
     '}'
 )
 
+RECIPE_LIST_JSON_SCHEMA = (
+    '{\n'
+    '  "recipes": [\n'
+    '    {\n'
+    '      "title": "...",\n'
+    '      "ingredients": [{"name": "...", "qty": "... ou null"}],\n'
+    '      "steps": [{"text": "...", "duration_seconds": null}],\n'
+    '      "source": null,\n'
+    '      "tags": ["..."]\n'
+    '    }\n'
+    '  ]\n'
+    '}'
+)
+
+
+def _exclude_clause(exclude) -> str:
+    """Optional 'do not repeat these' line appended to one-shot prompts (re-roll)."""
+    names = [n for n in (exclude or []) if n and n.strip()]
+    if not names:
+        return ""
+    return f"\nNe propose pas à nouveau ces recettes : {', '.join(names)}.\n"
+
+
+def _recipes_json_request() -> str:
+    return (
+        "\n## Format de réponse OBLIGATOIRE\n"
+        "Réponds avec un seul bloc ```json``` contenant 3 recettes COMPLÈTES "
+        "(titre, ingrédients avec quantités, étapes), respectant EXACTEMENT ce schéma "
+        "(3 entrées dans \"recipes\") :\n"
+        f"```json\n{RECIPE_LIST_JSON_SCHEMA}\n```"
+    )
+
 
 def render_pantry(items: list[dict]) -> tuple[str, str]:
     """Return (main_block, staples_line)."""
@@ -115,7 +147,7 @@ def build_cook_with_shop(profile, tools, skills, pantry, params) -> str:
     )
 
 
-def build_plan(profile, tools, skills, pantry, params) -> str:
+def build_plan(profile, tools, skills, pantry, params, exclude=None) -> str:
     slots = []
     if params.get("lunch"):
         slots.append("déjeuner")
@@ -129,7 +161,8 @@ def build_plan(profile, tools, skills, pantry, params) -> str:
         f"({' et '.join(slots) or 'dîner'}), pour {params.get('servings', 2)} personnes.\n"
         f"- Réutilisation des restes : {'oui' if params.get('leftovers') else 'non'}\n"
         f"- Envies / précisions : {params.get('cravings') or 'aucune'}\n"
-        "Utilise en priorité mes ingrédients, et ajoute une liste de courses consolidée.\n\n"
+        "Utilise en priorité mes ingrédients, et ajoute une liste de courses consolidée.\n"
+        f"{_exclude_clause(exclude)}\n"
         "## Format de réponse OBLIGATOIRE\n"
         "Réponds avec un bloc ```json``` respectant EXACTEMENT ce schéma "
         "(3 entrées dans \"plans\") :\n"
@@ -159,4 +192,50 @@ def build_meal_cooking(profile, tools, skills, meal: dict, servings: int) -> str
         "Inclus la liste d'ingrédients avec quantités et les étapes numérotées avec durées.\n\n"
         "Si possible, termine par un bloc ```json``` (pour l'enregistrer) au format :\n"
         f"```json\n{RECIPE_JSON_SCHEMA}\n```"
+    )
+
+
+def build_cook_with_have_json(profile, tools, skills, pantry, params, exclude=None) -> str:
+    return (
+        f"{base_context(profile, tools, skills)}\n"
+        f"{_pantry_section(pantry)}\n"
+        "## Demande\n"
+        "Propose-moi 3 recettes complètes en utilisant **uniquement** les ingrédients "
+        "disponibles ci-dessus (les épices/condiments sont supposés toujours disponibles).\n"
+        f"- Temps de cuisson maximum : {params.get('max_time', 30)} minutes\n"
+        f"- Pour {params.get('servings', profile.get('household_size', 2))} personnes\n"
+        f"- Repas : {params.get('meal', 'indifférent')}\n"
+        f"- Envies / précisions : {params.get('cravings') or 'aucune'}\n"
+        f"{_exclude_clause(exclude)}"
+        f"{_recipes_json_request()}"
+    )
+
+
+def build_cook_with_shop_json(profile, tools, skills, pantry, params, exclude=None) -> str:
+    return (
+        f"{base_context(profile, tools, skills)}\n"
+        f"{_pantry_section(pantry)}\n"
+        "## Demande\n"
+        "Propose-moi 3 recettes complètes basées sur mes ingrédients, en autorisant "
+        f"au maximum {params.get('max_extra', 5)} ingrédients à acheter en plus.\n"
+        "Pour chaque recette, inclus les ingrédients à acheter dans sa liste d'ingrédients.\n"
+        f"- Temps de cuisson maximum : {params.get('max_time', 30)} minutes\n"
+        f"- Pour {params.get('servings', profile.get('household_size', 2))} personnes\n"
+        f"- Envies / précisions : {params.get('cravings') or 'aucune'}\n"
+        f"{_exclude_clause(exclude)}"
+        f"{_recipes_json_request()}"
+    )
+
+
+def build_use_it_up_json(profile, tools, skills, pantry, expiring_names, params, exclude=None) -> str:
+    return (
+        f"{base_context(profile, tools, skills)}\n"
+        f"{_pantry_section(pantry)}\n"
+        "## Demande\n"
+        "Propose-moi 3 recettes complètes qui utilisent **en priorité** ces ingrédients "
+        f"bientôt périmés / à consommer : {', '.join(expiring_names)}.\n"
+        f"- Temps de cuisson maximum : {params.get('max_time', 30)} minutes\n"
+        "Tu peux compléter avec les autres ingrédients disponibles.\n"
+        f"{_exclude_clause(exclude)}"
+        f"{_recipes_json_request()}"
     )

@@ -74,3 +74,40 @@ def test_meal_cooking_prompt_includes_title_and_servings():
                                    {"title": "Curry de lentilles", "ingredients": ["lentilles", "lait de coco"]}, servings=2)
     assert "Curry de lentilles" in prompt
     assert "2" in prompt
+
+def test_cook_have_json_asks_for_three_recipe_array():
+    prompt = pb.build_cook_with_have_json(PROFILE, TOOLS, SKILLS, PANTRY,
+                                          {"max_time": 25, "cravings": "", "servings": 2, "meal": "diner"})
+    assert '"recipes"' in prompt        # array schema present
+    assert '"steps"' in prompt and '"ingredients"' in prompt
+    assert "uniquement" in prompt.lower()
+    assert "3" in prompt or "trois" in prompt.lower()
+
+def test_cook_shop_json_mentions_extra_limit():
+    prompt = pb.build_cook_with_shop_json(PROFILE, TOOLS, SKILLS, PANTRY,
+                                          {"max_time": 30, "cravings": "", "servings": 2, "max_extra": 4})
+    assert '"recipes"' in prompt and "4" in prompt
+
+def test_use_it_up_json_lists_expiring_and_array_schema():
+    prompt = pb.build_use_it_up_json(PROFILE, TOOLS, SKILLS, PANTRY, ["Poulet"], {"max_time": 30})
+    assert '"recipes"' in prompt and "Poulet" in prompt
+
+def test_cook_have_json_excludes_seen_titles():
+    prompt = pb.build_cook_with_have_json(PROFILE, TOOLS, SKILLS, PANTRY,
+                                          {"max_time": 25, "cravings": "", "servings": 2, "meal": "diner"},
+                                          exclude=["Curry de poulet", "Salade César"])
+    assert "Curry de poulet" in prompt and "Salade César" in prompt
+    assert "ne propose pas" in prompt.lower()
+
+def test_build_plan_excludes_titles_when_given():
+    prompt = pb.build_plan(PROFILE, TOOLS, SKILLS, PANTRY,
+                           {"n_days": 3, "lunch": True, "dinner": True, "leftovers": True,
+                            "servings": 2, "cravings": ""},
+                           exclude=["Tarte aux poireaux"])
+    assert "Tarte aux poireaux" in prompt and "ne propose pas" in prompt.lower()
+
+def test_build_plan_without_exclude_has_no_exclusion_clause():
+    prompt = pb.build_plan(PROFILE, TOOLS, SKILLS, PANTRY,
+                           {"n_days": 3, "lunch": True, "dinner": True, "leftovers": True,
+                            "servings": 2, "cravings": ""})
+    assert "ne propose pas" not in prompt.lower()
