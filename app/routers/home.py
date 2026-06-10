@@ -1,11 +1,11 @@
 from datetime import date, timedelta
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Form
 from fastapi.responses import HTMLResponse
 from sqlmodel import Session, select
 from ..db import get_session
 from ..models import PantryItem, PlanningSession
 from .. import prompt_builder as pb
-from .generate import load_state
+from .generate import load_state, respond_with_recipes, _split_titles
 from ..main import templates
 
 router = APIRouter()
@@ -31,11 +31,15 @@ def home(request: Request, session: Session = Depends(get_session)):
 
 
 @router.post("/use-it-up", response_class=HTMLResponse)
-def use_it_up(request: Request, session: Session = Depends(get_session)):
+def use_it_up(request: Request, session: Session = Depends(get_session),
+              exclude_titles: str = Form("")):
     profile, tools, skills, pantry = load_state(session)
     names = [i.name for i in _expiring(session)]
-    prompt = pb.build_use_it_up(profile, tools, skills, pantry, names,
-                                {"max_time": profile["default_cook_time"]})
-    return templates.TemplateResponse(
-        "partials/_prompt_result.html",
-        {"request": request, "prompt": prompt, "show_recipe_save": True})
+    params = {"max_time": profile["default_cook_time"]}
+    return respond_with_recipes(
+        request, session,
+        json_prompt=pb.build_use_it_up_json(profile, tools, skills, pantry, names, params,
+                                            exclude=_split_titles(exclude_titles)),
+        prose_prompt=pb.build_use_it_up(profile, tools, skills, pantry, names, params),
+        reroll_to="/use-it-up",
+        reroll_fields={})
