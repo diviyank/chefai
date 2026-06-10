@@ -4,6 +4,10 @@ services:
     container_name: chefai
     ports:
       - "1212:1212"
+    environment:
+      # Passed through from the shell running `docker compose` OR from a sibling .env
+      # file (compose auto-loads it). Empty => app falls back to copy-paste prompts.
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
     volumes:
       - chefai-data:/data
     restart: unless-stopped
