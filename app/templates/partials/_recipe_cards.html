@@ -1,0 +1,36 @@
+<div class="space-y-4">
+  {% for recipe in recipes %}
+  <div class="bg-white border rounded p-3">
+    <h3 class="font-semibold">{{ recipe.title }}</h3>
+    {% if recipe.ingredients %}
+    <p class="text-xs uppercase text-slate-400 mt-2">Ingrédients</p>
+    <ul class="text-sm list-disc list-inside">
+      {% for ing in recipe.ingredients %}
+      <li>{{ ing.name }}{% if ing.qty %} — {{ ing.qty }}{% endif %}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {% if recipe.steps %}
+    <p class="text-xs uppercase text-slate-400 mt-2">Étapes</p>
+    <ol class="text-sm list-decimal list-inside">
+      {% for step in recipe.steps %}<li>{{ step.text }}</li>{% endfor %}
+    </ol>
+    {% endif %}
+    <form hx-post="/cookbook/save" hx-target="#card-result-{{ loop.index0 }}" hx-swap="innerHTML" class="mt-2">
+      <textarea name="raw" class="hidden">{{ recipe | tojson }}</textarea>
+      <button class="bg-green-600 text-white rounded px-4 py-2 text-sm w-full">Enregistrer &amp; cuisiner</button>
+    </form>
+    <div id="card-result-{{ loop.index0 }}" class="mt-2"></div>
+  </div>
+  {% endfor %}
+
+  {% if reroll_to %}
+  <form hx-post="{{ reroll_to }}" hx-target="#result" hx-swap="innerHTML" hx-indicator="#llm-spinner">
+    {% for name, value in reroll_fields.items() %}
+    <input type="hidden" name="{{ name }}" value="{{ value }}">
+    {% endfor %}
+    <input type="hidden" name="exclude_titles" value="{{ exclude_value }}">
+    <button class="bg-slate-200 rounded px-4 py-2 text-sm w-full">Générer d'autres recettes</button>
+  </form>
+  {% endif %}
+</div>

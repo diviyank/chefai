@@ -12,7 +12,7 @@
   </div>
 
   <!-- HAVE -->
-  <form x-show="tab==='have'" hx-post="/cook/have" hx-target="#result" class="space-y-2 mt-4">
+  <form x-show="tab==='have'" hx-post="/cook/have" hx-target="#result" hx-indicator="#llm-spinner" class="space-y-2 mt-4">
     <label class="block text-sm">Temps max (min)
       <input name="max_time" type="number" value="{{ default_time }}" class="w-full border rounded p-2"></label>
     <label class="block text-sm">Personnes
@@ -27,7 +27,7 @@
   </form>
 
   <!-- SHOP -->
-  <form x-show="tab==='shop'" hx-post="/cook/shop" hx-target="#result" class="space-y-2 mt-4">
+  <form x-show="tab==='shop'" hx-post="/cook/shop" hx-target="#result" hx-indicator="#llm-spinner" class="space-y-2 mt-4">
     <label class="block text-sm">Temps max (min)
       <input name="max_time" type="number" value="{{ default_time }}" class="w-full border rounded p-2"></label>
     <label class="block text-sm">Personnes
@@ -42,6 +42,7 @@
   <!-- PLAN (form posts to plan router, Task 17) -->
   <div x-show="tab==='plan'" class="mt-4">{% include "partials/_plan_form.html" ignore missing %}</div>
 
+  <div id="llm-spinner" class="htmx-indicator text-center text-sm text-slate-500 mt-4">⏳ Claude réfléchit…</div>
   <div id="result"></div>
 </div>
 {% endblock %}

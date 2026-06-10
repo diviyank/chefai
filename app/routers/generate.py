@@ -4,9 +4,21 @@ from sqlmodel import Session, select
 from ..db import get_session
 from ..models import PantryItem, Settings, Tool, Skill
 from .. import prompt_builder as pb
+from .. import response_parser as rp
+from .. import llm_client
 from ..main import templates
 
 router = APIRouter()
+
+FALLBACK_NOTICE = "Génération directe indisponible — copiez le prompt ci-dessous."
+
+
+def _split_titles(value: str) -> list[str]:
+    return [t.strip() for t in (value or "").split("||") if t.strip()]
+
+
+def _join_titles(titles: list[str]) -> str:
+    return "||".join(titles)
 
 
 def load_state(session: Session):
@@ -27,14 +39,34 @@ def load_state(session: Session):
     return profile, tools, skills, pantry
 
 
-def _prompt_response(request: Request, prompt: str, show_recipe_save: bool = False):
+def _prompt_response(request: Request, prompt: str, show_recipe_save: bool = False, notice: str = None):
     """Return a rendered prompt result partial.
 
     Suggestion flows set show_recipe_save so the user can paste a chosen recipe back
     and save it to the cookbook (enabling cook mode + pantry decrement)."""
     return templates.TemplateResponse(
         "partials/_prompt_result.html",
-        {"request": request, "prompt": prompt, "show_recipe_save": show_recipe_save})
+        {"request": request, "prompt": prompt, "show_recipe_save": show_recipe_save, "notice": notice})
+
+
+def respond_with_recipes(request: Request, session: Session, *, json_prompt: str,
+                         prose_prompt: str, reroll_to: str, reroll_fields: dict):
+    """Direct path if configured + enabled: call Claude, parse a 3-recipe array,
+    render cards. On not-configured/disabled -> the prose prompt. On any LLM or
+    parse failure -> the prose prompt + a French notice."""
+    settings = session.get(Settings, 1)
+    if not (llm_client.is_configured() and settings.use_llm_directly):
+        return _prompt_response(request, prose_prompt, show_recipe_save=True)
+    try:
+        parsed = rp.parse_recipe_list_response(llm_client.complete(json_prompt))
+    except (llm_client.LLMError, rp.ParseError):
+        return _prompt_response(request, prose_prompt, show_recipe_save=True, notice=FALLBACK_NOTICE)
+    recipes = [r.model_dump() for r in parsed.recipes]
+    return templates.TemplateResponse("partials/_recipe_cards.html", {
+        "request": request, "recipes": recipes,
+        "reroll_to": reroll_to, "reroll_fields": reroll_fields,
+        "exclude_value": _join_titles([r["title"] for r in recipes]),
+    })
 
 
 @router.get("/cook", response_class=HTMLResponse)
@@ -49,22 +81,32 @@ def cook_page(request: Request, session: Session = Depends(get_session)):
 @router.post("/cook/have", response_class=HTMLResponse)
 def gen_have(request: Request, session: Session = Depends(get_session),
              max_time: int = Form(30), cravings: str = Form(""),
-             servings: int = Form(2), meal: str = Form("indifférent")):
-    """Generate a prompt for cooking with what you have."""
+             servings: int = Form(2), meal: str = Form("indifférent"),
+             exclude_titles: str = Form("")):
+    """Cook with what you have: direct 3-recipe cards, or copy-paste prompt."""
     profile, tools, skills, pantry = load_state(session)
-    prompt = pb.build_cook_with_have(profile, tools, skills, pantry,
-                                     {"max_time": max_time, "cravings": cravings,
-                                      "servings": servings, "meal": meal})
-    return _prompt_response(request, prompt, show_recipe_save=True)
+    params = {"max_time": max_time, "cravings": cravings, "servings": servings, "meal": meal}
+    return respond_with_recipes(
+        request, session,
+        json_prompt=pb.build_cook_with_have_json(profile, tools, skills, pantry, params,
+                                                 exclude=_split_titles(exclude_titles)),
+        prose_prompt=pb.build_cook_with_have(profile, tools, skills, pantry, params),
+        reroll_to="/cook/have",
+        reroll_fields={"max_time": max_time, "cravings": cravings, "servings": servings, "meal": meal})
 
 
 @router.post("/cook/shop", response_class=HTMLResponse)
 def gen_shop(request: Request, session: Session = Depends(get_session),
              max_time: int = Form(30), cravings: str = Form(""),
-             servings: int = Form(2), max_extra: int = Form(5)):
-    """Generate a prompt for cooking with a small shopping list."""
+             servings: int = Form(2), max_extra: int = Form(5),
+             exclude_titles: str = Form("")):
+    """Cook with a small shopping list: direct 3-recipe cards, or copy-paste prompt."""
     profile, tools, skills, pantry = load_state(session)
-    prompt = pb.build_cook_with_shop(profile, tools, skills, pantry,
-                                     {"max_time": max_time, "cravings": cravings,
-                                      "servings": servings, "max_extra": max_extra})
-    return _prompt_response(request, prompt, show_recipe_save=True)
+    params = {"max_time": max_time, "cravings": cravings, "servings": servings, "max_extra": max_extra}
+    return respond_with_recipes(
+        request, session,
+        json_prompt=pb.build_cook_with_shop_json(profile, tools, skills, pantry, params,
+                                                 exclude=_split_titles(exclude_titles)),
+        prose_prompt=pb.build_cook_with_shop(profile, tools, skills, pantry, params),
+        reroll_to="/cook/shop",
+        reroll_fields={"max_time": max_time, "cravings": cravings, "servings": servings, "max_extra": max_extra})
