@@ -1,5 +1,6 @@
 from app.models import Settings, Tool
 
+
 def test_get_settings_shows_profile_fields(client):
     r = client.get("/settings")
     assert r.status_code == 200
@@ -21,3 +22,27 @@ def test_toggle_tool(client, session):
     assert r.status_code == 200
     session.refresh(tool)
     assert tool.enabled is True
+
+
+def test_settings_page_shows_direct_mode_toggle(client):
+    r = client.get("/settings")
+    assert r.status_code == 200
+    assert "use_llm_directly" in r.text
+
+
+def test_settings_post_persists_direct_mode_off(client, session):
+    # checkbox unchecked → field absent in the form payload → stored False
+    client.post("/settings", data={
+        "household_size": "2", "default_cook_time": "30", "language": "fr",
+        "restrictions": "", "allergies": "", "dislikes": "",
+        "consumption_habits": "", "tools_notes": "", "skills_notes": ""})
+    assert session.get(Settings, 1).use_llm_directly is False
+
+
+def test_settings_post_persists_direct_mode_on(client, session):
+    client.post("/settings", data={
+        "household_size": "2", "default_cook_time": "30", "language": "fr",
+        "restrictions": "", "allergies": "", "dislikes": "",
+        "consumption_habits": "", "tools_notes": "", "skills_notes": "",
+        "use_llm_directly": "on"})
+    assert session.get(Settings, 1).use_llm_directly is True

@@ -4,6 +4,7 @@ from sqlmodel import Session, select
 from ..db import get_session
 from ..models import Settings, Tool, Skill
 from ..main import templates  # templates configured in main
+from .. import llm_client
 
 router = APIRouter()
 
@@ -19,6 +20,7 @@ def settings_page(request: Request, session: Session = Depends(get_session)):
         "settings": _settings(session),
         "tools": session.exec(select(Tool)).all(),
         "skills": session.exec(select(Skill)).all(),
+        "api_configured": llm_client.is_configured(),
     })
 
 
@@ -34,6 +36,7 @@ def update_settings(
     consumption_habits: str = Form(""),
     tools_notes: str = Form(""),
     skills_notes: str = Form(""),
+    use_llm_directly: str = Form(None),
 ):
     s = _settings(session)
     s.household_size = household_size
@@ -45,6 +48,7 @@ def update_settings(
     s.consumption_habits = consumption_habits
     s.tools_notes = tools_notes
     s.skills_notes = skills_notes
+    s.use_llm_directly = use_llm_directly is not None
     session.add(s); session.commit()
     return RedirectResponse("/settings", status_code=303)
 

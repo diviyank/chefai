@@ -32,6 +32,13 @@
       <option value="fr" {{ 'selected' if settings.language=='fr' }}>Français</option>
     </select>
   </label>
+  <label class="flex items-center gap-2 text-sm">
+    <input type="checkbox" name="use_llm_directly" {{ 'checked' if settings.use_llm_directly }}>
+    Générer directement avec Claude (sinon : prompt à copier-coller)
+  </label>
+  <p class="text-xs text-slate-500">
+    {% if api_configured %}Clé API détectée.{% else %}Aucune clé API (ANTHROPIC_API_KEY) — mode copier-coller uniquement.{% endif %}
+  </p>
   <button class="bg-green-600 text-white rounded px-4 py-2">Enregistrer</button>
 </form>
 
