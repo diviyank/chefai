@@ -17,12 +17,51 @@ def plan_generate(request: Request, session: Session = Depends(get_session),
                   n_days: int = Form(3), lunch: str = Form(None), dinner: str = Form(None),
                   leftovers: str = Form(None), servings: int = Form(2), cravings: str = Form("")):
     profile, tools, skills, pantry = load_state(session)
-    prompt = pb.build_plan(profile, tools, skills, pantry, {
-        "n_days": n_days, "lunch": bool(lunch), "dinner": bool(dinner),
-        "leftovers": bool(leftovers), "servings": servings, "cravings": cravings,
-    })
-    return templates.TemplateResponse("partials/_prompt_result.html",
-                                      {"request": request, "prompt": prompt})
+    params = {"n_days": n_days, "lunch": bool(lunch), "dinner": bool(dinner),
+              "leftovers": bool(leftovers), "servings": servings, "cravings": cravings}
+    settings = session.get(Settings, 1)
+    if not (llm_client.is_configured() and settings.use_llm_directly):
+        return _prompt_response(request, pb.build_plan(profile, tools, skills, pantry, params))
+    try:
+        parsed = rp.parse_plan_response(llm_client.complete(pb.build_plan(profile, tools, skills, pantry, params)))
+    except (llm_client.LLMError, rp.ParseError):
+        return _prompt_response(request, pb.build_plan(profile, tools, skills, pantry, params),
+                                notice=FALLBACK_NOTICE)
+    ps = PlanningSession(params_json=params,
+                         proposals_json=[p.model_dump() for p in parsed.plans], status="proposed")
+    session.add(ps); session.commit(); session.refresh(ps)
+    return templates.TemplateResponse("partials/_plan_proposals_cards.html",
+                                      {"request": request, "ps": ps, "plans": ps.proposals_json,
+                                       "reroll": True})
+
+
+def _plan_meal_titles(proposals: list) -> list[str]:
+    titles = []
+    for plan in proposals:
+        for day in plan.get("days", []):
+            for meal in day.get("meals", []):
+                if meal.get("title"):
+                    titles.append(meal["title"])
+    return titles
+
+
+@router.post("/plan/{ps_id}/regenerate", response_class=HTMLResponse)
+def plan_regenerate(ps_id: int, request: Request, session: Session = Depends(get_session)):
+    ps = session.get(PlanningSession, ps_id)
+    profile, tools, skills, pantry = load_state(session)
+    exclude = _plan_meal_titles(ps.proposals_json)
+    prompt = pb.build_plan(profile, tools, skills, pantry, ps.params_json, exclude=exclude)
+    try:
+        parsed = rp.parse_plan_response(llm_client.complete(prompt))
+    except (llm_client.LLMError, rp.ParseError):
+        return templates.TemplateResponse("partials/_plan_proposals_cards.html",
+                                          {"request": request, "ps": ps, "plans": ps.proposals_json,
+                                           "reroll": True, "notice": FALLBACK_NOTICE})
+    ps.proposals_json = [p.model_dump() for p in parsed.plans]
+    session.add(ps); session.commit(); session.refresh(ps)
+    return templates.TemplateResponse("partials/_plan_proposals_cards.html",
+                                      {"request": request, "ps": ps, "plans": ps.proposals_json,
+                                       "reroll": True})
 
 
 @router.post("/plan/parse", response_class=HTMLResponse)

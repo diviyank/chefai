@@ -95,3 +95,45 @@ def test_meal_prompt_fallback_on_failure(client, session, fake_llm):
     fake_llm["reply"] = llm_client.LLMError("boom")
     r = client.get(f"/plan/meal/{meal.id}/prompt")
     assert "Copier le prompt" in r.text and "indisponible" in r.text.lower()
+
+
+_TWO_PLANS = json.dumps({"plans": [
+    {"label": "Plan A", "days": [{"day": 1, "meals": [
+        {"slot": "diner", "title": "Risotto", "ingredients": ["riz"]}]}],
+     "shopping_list": [{"name": "Riz", "qty": "300 g", "store_type": "Autre"}]},
+    {"label": "Plan B", "days": [{"day": 1, "meals": [
+        {"slot": "diner", "title": "Tajine", "ingredients": ["pois chiches"]}]}],
+     "shopping_list": []},
+]})
+
+
+def test_plan_generate_direct_renders_proposal_cards(client, session, fake_llm):
+    fake_llm["reply"] = _TWO_PLANS
+    r = client.post("/plan/generate", data={
+        "n_days": "3", "lunch": "on", "dinner": "on", "leftovers": "on",
+        "servings": "2", "cravings": ""})
+    assert r.status_code == 200
+    assert "Risotto" in r.text and "Tajine" in r.text
+    assert "Valider ce plan" in r.text and "Générer d'autres plans" in r.text
+
+
+def test_plan_generate_fallback_on_failure(client, fake_llm):
+    fake_llm["reply"] = llm_client.LLMError("boom")
+    r = client.post("/plan/generate", data={
+        "n_days": "3", "lunch": "on", "dinner": "on", "leftovers": "on",
+        "servings": "2", "cravings": ""})
+    assert "Copier le prompt" in r.text and "indisponible" in r.text.lower()
+
+
+def test_plan_regenerate_excludes_prior_titles(client, session, fake_llm):
+    fake_llm["reply"] = _TWO_PLANS
+    client.post("/plan/generate", data={
+        "n_days": "3", "lunch": "on", "dinner": "on", "leftovers": "on",
+        "servings": "2", "cravings": ""})
+    ps = session.exec(select(PlanningSession)
+                      .order_by(PlanningSession.id.desc())).first()
+    fake_llm["reply"] = _TWO_PLANS
+    r = client.post(f"/plan/{ps.id}/regenerate")
+    assert r.status_code == 200
+    assert "Risotto" in fake_llm["prompts"][-1]      # prior title fed back as exclusion
+    assert "ne propose pas" in fake_llm["prompts"][-1].lower()

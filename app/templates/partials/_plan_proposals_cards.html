@@ -1,0 +1,28 @@
+<div class="space-y-4">
+  {% if notice %}
+  <div class="p-2 rounded bg-amber-50 text-amber-800 text-sm border border-amber-200">{{ notice }}</div>
+  {% endif %}
+  {% for plan in plans %}
+  <div class="bg-white border rounded p-3">
+    <h3 class="font-semibold">{{ plan.label }}</h3>
+    {% for day in plan.days %}
+      <p class="text-xs uppercase text-slate-400 mt-2">Jour {{ day.day }}</p>
+      {% for meal in day.meals %}
+        <p class="text-sm">• {{ meal.slot }} — {{ meal.title }}</p>
+      {% endfor %}
+    {% endfor %}
+    <form method="post" action="/plan/{{ ps.id }}/validate" class="mt-2">
+      <input type="hidden" name="choice" value="{{ loop.index0 }}">
+      <button class="bg-green-600 text-white rounded px-4 py-2 text-sm">Valider ce plan</button>
+    </form>
+  </div>
+  {% endfor %}
+  {% if reroll %}
+  <form method="post" action="/plan/{{ ps.id }}/regenerate">
+    <button class="bg-slate-200 rounded px-4 py-2 text-sm w-full">Générer d'autres plans</button>
+  </form>
+  {% endif %}
+  <form method="post" action="/plan/{{ ps.id }}/cancel">
+    <button class="text-red-500 text-sm">Annuler le plan</button>
+  </form>
+</div>
