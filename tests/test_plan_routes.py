@@ -87,8 +87,7 @@ def test_meal_prompt_direct_renders_recipe(client, session, fake_llm):
     fake_llm["reply"] = _ONE_RECIPE
     r = client.get(f"/plan/meal/{meal.id}/prompt")
     assert r.status_code == 200
-    # Recipe card shows structured ingredients/steps, not prose prompt
-    assert "Étapes" in r.text and "<li>Mijoter</li>" in r.text
+    assert "Curry de lentilles" in r.text and "/cookbook/save" in r.text
 
 
 def test_meal_prompt_fallback_on_failure(client, session, fake_llm):

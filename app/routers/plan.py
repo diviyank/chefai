@@ -80,11 +80,11 @@ def plan_detail(ps_id: int, request: Request, session: Session = Depends(get_ses
 def meal_prompt(meal_id: int, request: Request, session: Session = Depends(get_session)):
     meal = session.get(Meal, meal_id)
     profile, tools, skills, _ = load_state(session)
+    settings = session.get(Settings, 1)
     prompt = pb.build_meal_cooking(
         profile, tools, skills,
         {"title": meal.title, "ingredients": meal.ingredients_json},
-        servings=session.get(Settings, 1).household_size)
-    settings = session.get(Settings, 1)
+        servings=settings.household_size)
     if not (llm_client.is_configured() and settings.use_llm_directly):
         return _prompt_response(request, prompt, show_recipe_save=True)
     try:
