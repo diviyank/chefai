@@ -29,3 +29,21 @@ def test_parse_failure_raises_french_parse_error():
     with pytest.raises(rp.ParseError) as exc:
         rp.parse_plan_response("désolé, pas de json ici")
     assert "réponse non reconnue" in str(exc.value).lower()
+
+
+RECIPE_LIST_OK = '''Voici 3 idées :
+```json
+{"recipes":[
+  {"title":"Curry","ingredients":[{"name":"Riz","qty":"200 g"}],"steps":[{"text":"Cuire"}]},
+  {"title":"Soupe","ingredients":[],"steps":[]},
+  {"title":"Salade","ingredients":[],"steps":[]}
+]}
+```'''
+
+def test_parse_recipe_list_response_ok():
+    parsed = rp.parse_recipe_list_response(RECIPE_LIST_OK)
+    assert [r.title for r in parsed.recipes] == ["Curry", "Soupe", "Salade"]
+
+def test_parse_recipe_list_response_empty_raises():
+    with pytest.raises(rp.ParseError):
+        rp.parse_recipe_list_response('```json\n{"recipes":[]}\n```')

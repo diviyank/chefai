@@ -1,7 +1,7 @@
 import json
 import re
 from pydantic import ValidationError
-from .schemas import PlanResponse, RecipeResponse, ShoppingResponse
+from .schemas import PlanResponse, RecipeResponse, RecipeListResponse, ShoppingResponse
 
 _FENCE_RE = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.DOTALL | re.IGNORECASE)
 
@@ -54,3 +54,10 @@ def parse_recipe_response(text: str) -> RecipeResponse:
 
 def parse_shopping_response(text: str) -> ShoppingResponse:
     return _parse(text, ShoppingResponse)
+
+
+def parse_recipe_list_response(text: str) -> RecipeListResponse:
+    parsed = _parse(text, RecipeListResponse)
+    if not parsed.recipes:
+        raise ParseError(ERROR_MSG)
+    return parsed
