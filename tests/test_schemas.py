@@ -18,3 +18,14 @@ def test_recipe_response_step_duration_optional():
 def test_recipe_response_missing_title_raises():
     with pytest.raises(ValidationError):
         schemas.RecipeResponse.model_validate({"ingredients": []})
+
+def test_recipe_list_response_parses_multiple_recipes():
+    from app.schemas import RecipeListResponse
+    data = {"recipes": [
+        {"title": "Curry", "ingredients": [{"name": "Riz"}], "steps": [{"text": "Cuire"}]},
+        {"title": "Salade", "ingredients": [], "steps": []},
+    ]}
+    parsed = RecipeListResponse.model_validate(data)
+    assert len(parsed.recipes) == 2
+    assert parsed.recipes[0].title == "Curry"
+    assert parsed.recipes[0].ingredients[0].name == "Riz"

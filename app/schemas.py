@@ -26,6 +26,10 @@ class RecipeResponse(BaseModel):
     tags: list[str] = Field(default_factory=list)
 
 
+class RecipeListResponse(BaseModel):
+    recipes: list[RecipeResponse] = Field(default_factory=list)
+
+
 class PlanMeal(BaseModel):
     slot: str  # dejeuner | diner
     title: str
