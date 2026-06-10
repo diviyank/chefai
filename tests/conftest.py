@@ -25,3 +25,24 @@ def client(session):
     app.dependency_overrides[get_session] = _override
     yield TestClient(app)
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def fake_llm(monkeypatch):
+    """Force the direct-LLM path on and stub the Anthropic call.
+
+    Set state['reply'] to a JSON string to simulate success, or to an
+    LLMError instance to simulate a failure. state['prompts'] records every
+    prompt sent (for asserting the exclude clause on re-roll)."""
+    from app import llm_client
+    state = {"reply": "", "prompts": []}
+
+    def _complete(prompt):
+        state["prompts"].append(prompt)
+        if isinstance(state["reply"], Exception):
+            raise state["reply"]
+        return state["reply"]
+
+    monkeypatch.setattr(llm_client, "is_configured", lambda: True)
+    monkeypatch.setattr(llm_client, "complete", _complete)
+    return state
