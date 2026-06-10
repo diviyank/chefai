@@ -9,6 +9,8 @@ chefai is a single-user (household), **phone-first local web app**, hosted on a 
 
 chefai **never calls an LLM itself**. It builds a complete context + prompt that the user copies into the LLM of their choice. For meal plans (and optionally saved recipes), the user pastes the LLM's **structured reply back** into chefai, which parses and stores it so the app can offer per-meal actions, shopping lists, and a cookbook.
 
+> **Updated 2026-06-10:** This is reversed for an optional, key-gated direct-inference mode (Claude API). Copy-paste remains the default-capable fallback. See `docs/superpowers/specs/2026-06-10-chefai-claude-api-design.md`.
+
 The UI is in **French by default**, with a language selector for future locales.
 
 ## 2. Goals & non-goals
@@ -22,7 +24,7 @@ The UI is in **French by default**, with a language selector for future locales.
 - A cookbook with a guided cooking mode (step checklist + timers).
 
 **Non-goals (v1)**
-- No direct LLM API integration (pure copy-paste).
+- No direct LLM API integration (pure copy-paste). *(Updated 2026-06-10: an optional, key-gated direct Claude API mode now exists; copy-paste remains the default-capable fallback. See `docs/superpowers/specs/2026-06-10-chefai-claude-api-design.md`.)*
 - No precise quantity bookkeeping. (Completing cooking mode does a **best-effort, confirmation-based** pantry decrement — see §5.6 — but the app does not maintain exact running inventory.)
 - No multi-user accounts / auth (trusted home LAN, single household). Multiple phones on the LAN may use the app **concurrently against one shared dataset** (one pantry, profile, cookbook, plan); concurrent edits are last-write-wins, acceptable for low household traffic. The only per-device state is the offline shopping tick-state in `localStorage`, which does not sync between phones.
 - No barcode scanning, nutrition tracking, or prompt-history (possible later — see §12).

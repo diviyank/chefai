@@ -4,10 +4,13 @@ Single-household, **phone-first local web app** served on the home LAN (DietPi).
 **state** — pantry/groceries, dietary profile, owned tools, cooking skills — and turns that state into
 **copy-paste LLM prompts** for recipes and meal plans.
 
-**chefai never calls an LLM itself.** It builds a complete context + prompt the user copies into the LLM
-of their choice. For meal plans (and optionally saved recipes), the user pastes the LLM's **structured
-reply back**, which chefai parses and stores so it can offer per-meal actions, shopping lists, and a
-cookbook. UI is **French by default** (`app/locales/fr.json`), with a language selector for future locales.
+**chefai builds copy-paste LLM prompts by default, and can optionally call Claude directly** when
+`ANTHROPIC_API_KEY` is set and the Settings "Générer directement avec Claude" toggle is on. The direct
+path (`app/llm_client.py`, Sonnet 4.6) parses the reply and integrates it; on any failure it falls back
+to the copy-paste prompt. In copy-paste mode the user pastes the LLM's **structured reply back**, which
+chefai parses and stores so it can offer per-meal actions, shopping lists, and a cookbook. See
+`docs/superpowers/specs/2026-06-10-chefai-claude-api-design.md`. UI is **French by default**
+(`app/locales/fr.json`), with a language selector for future locales.
 
 Full design rationale lives in `docs/superpowers/specs/2026-06-09-chefai-design.md`. Read it before
 changing behavior — this file is the working summary, the spec is the source of truth.
@@ -57,8 +60,9 @@ routers or pull DB access into the pure modules.
   Applied transactionally on confirm; cancelling applies nothing.
 
 ### Non-goals (v1)
-No LLM API calls, no auth (trusted LAN, single shared dataset, last-write-wins), no exact inventory
-bookkeeping, no barcode/nutrition/prompt-history. See spec §2 and §12.
+Optional direct Claude API calls are key-gated; copy-paste remains the default-capable fallback. No auth
+(trusted LAN, single shared dataset, last-write-wins), no exact inventory bookkeeping, no
+barcode/nutrition/prompt-history. See spec §2 and §12.
 
 ## Development
 
