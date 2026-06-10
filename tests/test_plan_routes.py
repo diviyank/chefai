@@ -1,4 +1,6 @@
+import json
 from app.models import PlanningSession, Meal, ShoppingItem
+from app import llm_client
 from sqlmodel import select
 
 PLAN_JSON = '''```json
@@ -62,3 +64,35 @@ def test_meal_cooking_prompt(client, session):
     meal = session.exec(select(Meal)).first()
     r = client.get(f"/plan/meal/{meal.id}/prompt")
     assert "Curry" in r.text
+
+
+_ONE_RECIPE = json.dumps({
+    "title": "Curry de lentilles",
+    "ingredients": [{"name": "Lentilles", "qty": "200 g"}],
+    "steps": [{"text": "Mijoter", "duration_seconds": 600}],
+})
+
+
+def _make_meal(session):
+    ps = PlanningSession(params_json={}, proposals_json=[], status="validated")
+    session.add(ps); session.commit(); session.refresh(ps)
+    meal = Meal(planning_session_id=ps.id, day_index=1, slot="diner",
+                title="Curry de lentilles", ingredients_json=["lentilles"])
+    session.add(meal); session.commit(); session.refresh(meal)
+    return meal
+
+
+def test_meal_prompt_direct_renders_recipe(client, session, fake_llm):
+    meal = _make_meal(session)
+    fake_llm["reply"] = _ONE_RECIPE
+    r = client.get(f"/plan/meal/{meal.id}/prompt")
+    assert r.status_code == 200
+    # Recipe card shows structured ingredients/steps, not prose prompt
+    assert "Étapes" in r.text and "<li>Mijoter</li>" in r.text
+
+
+def test_meal_prompt_fallback_on_failure(client, session, fake_llm):
+    meal = _make_meal(session)
+    fake_llm["reply"] = llm_client.LLMError("boom")
+    r = client.get(f"/plan/meal/{meal.id}/prompt")
+    assert "Copier le prompt" in r.text and "indisponible" in r.text.lower()
