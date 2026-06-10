@@ -1451,7 +1451,7 @@ git commit -m "docs: note optional direct Claude inference; reverse no-LLM non-g
 ## Deployment notes (not code tasks)
 
 - **API key:** set `ANTHROPIC_API_KEY` in the environment (docker-compose `environment:` / a `.env` referenced by compose). Never commit it. Optional `CHEFAI_LLM_MODEL` overrides the model (default `claude-sonnet-4-6`).
-- **Existing SQLite DB:** `init_db()` uses `SQLModel.metadata.create_all`, which does **not** ALTER existing tables. The new `Settings.use_llm_directly` column appears automatically on fresh DBs (incl. the test suite). For an already-deployed `chefai.db`, add the column once: `ALTER TABLE settings ADD COLUMN use_llm_directly BOOLEAN DEFAULT 1;` (or recreate the dev DB). New installs need nothing.
+- **Existing SQLite DB:** handled automatically. `init_db()` runs `SQLModel.metadata.create_all` (which does not ALTER existing tables) and then `_ensure_settings_columns()` (Task 14), which idempotently backfills the `Settings.use_llm_directly` column on a pre-existing `chefai.db`. Fresh installs and the test suite get the column from `create_all`; already-deployed DBs get it on the next startup. No manual migration needed.
 - **Cost:** ~$3–8/month at 2–3 calls/day on Sonnet 4.6 (per the spec).
 
 ---

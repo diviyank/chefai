@@ -88,7 +88,10 @@ Pure additions (all unit-testable, no DB/web):
   project's `.env` rule.
 - `CHEFAI_LLM_MODEL` env override (default `claude-sonnet-4-6`).
 - One new `Settings` boolean `use_llm_directly` (default `true`) to disable the
-  direct path without removing the key.
+  direct path without removing the key. Because the app provisions schema via
+  `create_all` (no migration tool), `init_db()` also runs an idempotent
+  `_ensure_settings_columns()` backfill so a pre-existing `chefai.db` gains the
+  column on startup rather than crashing.
 - The UI shows the "Générer avec Claude" direct action only when
   `llm_client.is_configured() and settings.use_llm_directly`.
 
