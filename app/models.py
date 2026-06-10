@@ -26,6 +26,7 @@ class Settings(SQLModel, table=True):
     consumption_habits: str = ""
     tools_notes: str = ""
     skills_notes: str = ""
+    use_llm_directly: bool = True
     categories_json: list = Field(default_factory=list, sa_column=Column(JSON))
     store_types_json: list = Field(default_factory=list, sa_column=Column(JSON))
 

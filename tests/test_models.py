@@ -27,3 +27,7 @@ def test_recipe_stores_json_lists():
         s.add(r); s.commit(); s.refresh(r)
         assert r.steps_json[0]["duration_seconds"] == 1200
         assert r.tags_json == ["végétarien"]
+
+def test_settings_defaults_to_direct_llm_enabled():
+    from app.models import Settings
+    assert Settings().use_llm_directly is True
