@@ -39,8 +39,15 @@ def client(session):
 
 
 @pytest.fixture
-def fake_llm(monkeypatch):
+def fake_llm(monkeypatch, session):
+    """Direct-Claude mode active: key present, toggle on, complete() stubbed. Enables
+    the toggle explicitly because the Settings default is now copy-paste (opt-in)."""
     from app import llm_client, jobs
+    from app.models import Settings
+    settings = session.get(Settings, 1)
+    settings.use_llm_directly = True
+    session.add(settings)
+    session.commit()
     state = {"reply": "", "prompts": []}
 
     def _complete(prompt, **kw):

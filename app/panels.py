@@ -17,6 +17,9 @@ def extra_context(kind: str, params: dict, result: dict | None) -> dict:
             "reroll_fields": {k: v for k, v in params.items() if k != "exclude_titles"},
             "exclude_value": _titles(recipes),
             "panel_target": f"panel-{kind}",
+            # On the copy-paste fallback (job error -> _prompt_result.html) the user
+            # still needs the paste-back box to save a recipe from the LLM reply.
+            "show_recipe_save": True,
         }
     if kind == "plan":
         return {}

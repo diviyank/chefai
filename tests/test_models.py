@@ -28,6 +28,7 @@ def test_recipe_stores_json_lists():
         assert r.steps_json[0]["duration_seconds"] == 1200
         assert r.tags_json == ["végétarien"]
 
-def test_settings_defaults_to_direct_llm_enabled():
+def test_settings_defaults_to_copy_paste():
+    """Copy-paste is the default-capable mode; direct Claude is opt-in (key + toggle)."""
     from app.models import Settings
-    assert Settings().use_llm_directly is True
+    assert Settings().use_llm_directly is False

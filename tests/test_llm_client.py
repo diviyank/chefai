@@ -9,6 +9,25 @@ def test_is_configured_reflects_env(monkeypatch):
     assert llm_client.is_configured() is True
 
 
+def test_get_api_key_strips_surrounding_quotes(monkeypatch):
+    """A key quoted in .env (ANTHROPIC_API_KEY="sk-...") 401s as-is; normalize it."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", '"sk-ant-quoted"')
+    assert llm_client.get_api_key() == "sk-ant-quoted"
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "'sk-ant-single'")
+    assert llm_client.get_api_key() == "sk-ant-single"
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "  sk-ant-ws \n")
+    assert llm_client.get_api_key() == "sk-ant-ws"
+
+
+def test_get_api_key_none_when_unset_or_empty(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    assert llm_client.get_api_key() is None
+    assert llm_client.is_configured() is False
+    monkeypatch.setenv("ANTHROPIC_API_KEY", '""')   # empty after stripping quotes
+    assert llm_client.get_api_key() is None
+    assert llm_client.is_configured() is False
+
+
 def test_get_model_default_and_override(monkeypatch):
     monkeypatch.delenv("CHEFAI_LLM_MODEL", raising=False)
     assert llm_client.get_model() == "claude-sonnet-4-6"
@@ -16,10 +35,39 @@ def test_get_model_default_and_override(monkeypatch):
     assert llm_client.get_model() == "claude-haiku-4-5"
 
 
-def test_complete_without_key_raises_llm_error(monkeypatch):
+def test_complete_without_key_raises_auth_error(monkeypatch):
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-    with pytest.raises(llm_client.LLMError):
+    with pytest.raises(llm_client.AuthError):
         llm_client.complete("bonjour")
+
+
+def test_complete_maps_401_to_auth_error(monkeypatch):
+    """A 401 from the SDK must surface as AuthError so the UI can say 'key rejected'."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
+
+    class _Boom401(Exception):
+        status_code = 401
+
+    class _Messages:
+        def stream(self, **kw):
+            raise _Boom401("Error code: 401 - invalid x-api-key")
+
+    class _Client:
+        def __init__(self):
+            self.messages = _Messages()
+
+        def with_options(self, **kw):
+            return self
+
+    monkeypatch.setattr(llm_client, "_client", lambda: _Client())
+    with pytest.raises(llm_client.AuthError):
+        llm_client.complete("salut")
+
+
+def test_auth_error_notice_is_distinct():
+    assert issubclass(llm_client.AuthError, llm_client.LLMError)
+    assert llm_client.AuthError.notice != llm_client.LLMError.notice
+    assert "401" in llm_client.AuthError.notice
 
 
 class _FakeBlock:

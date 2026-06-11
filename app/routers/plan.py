@@ -49,10 +49,10 @@ def plan_regenerate(ps_id: int, request: Request, session: Session = Depends(get
     prompt = pb.build_plan(profile, tools, skills, pantry, ps.params_json, exclude=exclude)
     try:
         parsed = rp.parse_plan_response(llm_client.complete(prompt))
-    except (llm_client.LLMError, rp.ParseError):
+    except (llm_client.LLMError, rp.ParseError) as exc:
         return templates.TemplateResponse("partials/_plan_proposals_cards.html",
                                           {"request": request, "ps": ps, "plans": ps.proposals_json,
-                                           "reroll": True, "notice": FALLBACK_NOTICE})
+                                           "reroll": True, "notice": getattr(exc, "notice", FALLBACK_NOTICE)})
     ps.proposals_json = [p.model_dump() for p in parsed.plans]
     session.add(ps); session.commit(); session.refresh(ps)
     return templates.TemplateResponse("partials/_plan_proposals_cards.html",
@@ -131,8 +131,9 @@ def meal_prompt(meal_id: int, request: Request, session: Session = Depends(get_s
         return _prompt_response(request, prompt, show_recipe_save=True)
     try:
         parsed = rp.parse_recipe_response(llm_client.complete(prompt))
-    except (llm_client.LLMError, rp.ParseError):
-        return _prompt_response(request, prompt, show_recipe_save=True, notice=FALLBACK_NOTICE)
+    except (llm_client.LLMError, rp.ParseError) as exc:
+        return _prompt_response(request, prompt, show_recipe_save=True,
+                                notice=getattr(exc, "notice", FALLBACK_NOTICE))
     return templates.TemplateResponse("partials/_recipe_cards.html", {
         "request": request, "recipes": [parsed.model_dump()],
         "reroll_to": None, "reroll_fields": {}, "exclude_value": ""})

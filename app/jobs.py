@@ -2,9 +2,12 @@
 the outcome to GenerationJob. No knowledge of LLM or parsing — the caller supplies
 work(). Keeps prompt_builder/response_parser pure and routers thin."""
 import json
+import logging
 import threading
 from datetime import datetime
 from typing import Callable
+
+logger = logging.getLogger("chefai.jobs")
 
 from sqlmodel import Session, select
 
@@ -30,9 +33,13 @@ def _run(job_id: int, work: Callable[[], dict]) -> None:
         try:
             job.result_json = json.dumps(work())
             job.status = "done"
-        except Exception:  # LLMError / ParseError / anything -> graceful fallback
+        except Exception as exc:  # LLMError / ParseError / anything -> graceful fallback
+            # The user only sees the friendly notice; log the real cause so a
+            # systematically-failing direct path (timeout, truncation, auth) is
+            # diagnosable in the server logs instead of silently swallowed.
+            logger.exception("generation job %s (%s) failed", job_id, job.kind)
             job.status = "error"
-            job.notice = FALLBACK_NOTICE
+            job.notice = getattr(exc, "notice", FALLBACK_NOTICE)
         job.updated_at = datetime.utcnow()
         s.add(job)
         s.commit()

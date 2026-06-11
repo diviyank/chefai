@@ -13,10 +13,31 @@ DEFAULT_TIMEOUT_S = 120.0
 
 class LLMError(RuntimeError):
     """Any failure talking to Claude (missing key, network, API error, refusal)."""
+    # User-facing notice shown when the direct path degrades to copy-paste.
+    notice = "Génération directe indisponible — copiez le prompt ci-dessous."
+
+
+class AuthError(LLMError):
+    """Credentials rejected (401) or absent. Distinct from a transient failure so the
+    UI can tell the user the key itself is wrong instead of a generic 'unavailable'."""
+    notice = ("Clé API Claude refusée (401) — vérifiez ANTHROPIC_API_KEY "
+              "(guillemets superflus ? clé invalide ?). Copiez le prompt ci-dessous.")
+
+
+def get_api_key() -> str | None:
+    """The API key, normalized. A key wrapped in quotes in .env (ANTHROPIC_API_KEY=
+    "sk-ant-...") is a common footgun: it looks present but the surrounding quotes make
+    the API reject it with 401 invalid x-api-key. Docker Compose strips such quotes but
+    a raw shell/`env` export does not, so we normalize here. Anthropic keys never start
+    with a quote, so stripping matched surrounding quotes/whitespace is safe."""
+    raw = os.environ.get("ANTHROPIC_API_KEY")
+    if raw is None:
+        return None
+    return raw.strip().strip("\"'").strip() or None
 
 
 def is_configured() -> bool:
-    return bool(os.environ.get("ANTHROPIC_API_KEY"))
+    return bool(get_api_key())
 
 
 def get_model() -> str:
@@ -29,7 +50,7 @@ def get_timeout() -> float:
 
 def _client():
     from anthropic import Anthropic
-    return Anthropic()
+    return Anthropic(api_key=get_api_key())
 
 
 _DEFAULT = object()
@@ -43,7 +64,7 @@ def complete(prompt: str, *, model: str = None, max_tokens: int = None,
     adaptive; pass thinking=None to omit it (e.g. Haiku). effort/system are sent only
     when provided."""
     if not is_configured():
-        raise LLMError("ANTHROPIC_API_KEY non configurée")
+        raise AuthError("ANTHROPIC_API_KEY non configurée")
     kwargs = {
         "model": model or get_model(),
         "max_tokens": max_tokens or MAX_TOKENS,
@@ -61,6 +82,8 @@ def complete(prompt: str, *, model: str = None, max_tokens: int = None,
         with client.messages.stream(**kwargs) as stream:
             message = stream.get_final_message()
     except Exception as exc:  # SDK APIError, network, etc. -> uniform LLMError
+        if getattr(exc, "status_code", None) == 401:
+            raise AuthError(str(exc)) from exc
         raise LLMError(str(exc)) from exc
     return "".join(
         block.text for block in message.content

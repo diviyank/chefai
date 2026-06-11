@@ -60,8 +60,9 @@ def respond_with_recipes(request: Request, session: Session, *, json_prompt: str
         return _prompt_response(request, prose_prompt, show_recipe_save=True)
     try:
         parsed = rp.parse_recipe_list_response(llm_client.complete(json_prompt))
-    except (llm_client.LLMError, rp.ParseError):
-        return _prompt_response(request, prose_prompt, show_recipe_save=True, notice=FALLBACK_NOTICE)
+    except (llm_client.LLMError, rp.ParseError) as exc:
+        return _prompt_response(request, prose_prompt, show_recipe_save=True,
+                                notice=getattr(exc, "notice", FALLBACK_NOTICE))
     recipes = [r.model_dump() for r in parsed.recipes]
     return templates.TemplateResponse("partials/_recipe_cards.html", {
         "request": request, "recipes": recipes,

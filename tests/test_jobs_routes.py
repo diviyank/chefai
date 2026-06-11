@@ -31,3 +31,14 @@ def test_panel_error_renders_prompt_fallback(client, session):
     r = client.get("/jobs/cook_have/panel")
     assert "COPIE MOI" in r.text
     assert "indisponible" in r.text.lower()
+
+
+def test_cook_panel_fallback_keeps_recipe_paste_box(client, session):
+    """When a direct-LLM cook job fails, the copy-paste fallback must still offer the
+    paste-back box so the user can save a recipe from the LLM's reply."""
+    for kind in ("cook_have", "cook_shop"):
+        _add(session, kind=kind, status="error", params_json="{}",
+             prompt="PROMPT", notice="Génération directe indisponible")
+        r = client.get(f"/jobs/{kind}/panel")
+        assert 'id="recipe-save"' in r.text, kind
+        assert "Enregistrer la recette" in r.text, kind
