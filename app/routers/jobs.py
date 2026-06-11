@@ -14,10 +14,16 @@ def render_panel(request: Request, kind: str, job, *, session=None, **extra) -> 
     """Build the template context for a panel from a job row (or None)."""
     result = json.loads(job.result_json) if job and job.result_json else None
     params = json.loads(job.params_json) if job and job.params_json else {}
+    prompt = job.prompt if job else ""
+    if job and job.status == "error" and prompt:
+        # The error panel renders this prompt for copy-paste, so invite clarifying
+        # questions just like the sync copy-paste path does.
+        from .. import prompt_builder as pb
+        prompt = pb.with_clarifying_questions(prompt)
     ctx = {
         "request": request, "kind": kind, "job": job,
         "result": result, "params": params,
-        "prompt": job.prompt if job else "",
+        "prompt": prompt,
         "notice": job.notice if job else None,
     }
     from .. import panels

@@ -47,7 +47,8 @@ def _prompt_response(request: Request, prompt: str, show_recipe_save: bool = Fal
     and save it to the cookbook (enabling cook mode + pantry decrement)."""
     return templates.TemplateResponse(
         "partials/_prompt_result.html",
-        {"request": request, "prompt": prompt, "show_recipe_save": show_recipe_save, "notice": notice})
+        {"request": request, "prompt": pb.with_clarifying_questions(prompt),
+         "show_recipe_save": show_recipe_save, "notice": notice})
 
 
 def respond_with_recipes(request: Request, session: Session, *, json_prompt: str,

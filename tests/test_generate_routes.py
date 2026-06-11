@@ -86,3 +86,21 @@ def test_cook_shop_direct_renders_cards(client, fake_llm):
     r = client.post("/cook/shop", data={
         "max_time": "30", "cravings": "", "servings": "2", "max_extra": "4"})
     assert "Poulet rôti" in r.text and "/cookbook/save" in r.text
+
+
+def test_cook_have_copy_paste_invites_clarifying_questions(client, session):
+    """Default (copy-paste) mode shows the clarifying-questions clause for the user."""
+    session.add(PantryItem(name="Poulet", category="Frigo", quantity_text="500 g"))
+    session.commit()
+    r = client.post("/cook/have", data={"max_time": "30", "servings": "2"})
+    assert r.status_code == 200
+    assert "Avant de répondre" in r.text
+    assert "Copier le prompt" in r.text
+
+
+def test_direct_call_prompt_excludes_clarifying_questions(client, fake_llm):
+    """The prompt actually sent to Claude in direct mode must stay JSON-only."""
+    fake_llm["reply"] = _THREE_RECIPES
+    r = client.post("/cook/have", data={"max_time": "30", "servings": "2"})
+    assert r.status_code == 200
+    assert "Avant de répondre" not in fake_llm["prompts"][-1]

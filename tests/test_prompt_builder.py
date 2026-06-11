@@ -111,3 +111,12 @@ def test_build_plan_without_exclude_has_no_exclusion_clause():
                            {"n_days": 3, "lunch": True, "dinner": True, "leftovers": True,
                             "servings": 2, "cravings": ""})
     assert "ne propose pas" not in prompt.lower()
+
+
+def test_with_clarifying_questions_prepends_invitation_without_losing_original():
+    base = pb.build_cook_with_have(PROFILE, TOOLS, SKILLS, PANTRY, {"max_time": 30})
+    wrapped = pb.with_clarifying_questions(base)
+    assert base in wrapped                       # original prompt preserved intact
+    assert wrapped != base
+    assert "question" in wrapped.lower()         # invites clarifying questions
+    assert wrapped.index("Avant de répondre") < wrapped.index(base[:40])  # clause first
