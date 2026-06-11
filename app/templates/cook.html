@@ -1,17 +1,6 @@
 {% extends "base.html" %}
 {% block header %}Cuisiner{% endblock %}
 {% block content %}
-<style>
-  /* Self-contained so it animates without depending on the Tailwind build. */
-  .chefai-spinner {
-    width: 1rem; height: 1rem; border-radius: 9999px;
-    border: 2px solid #cbd5e1; border-top-color: #16a34a;
-    display: inline-block; animation: chefai-spin .7s linear infinite;
-  }
-  @keyframes chefai-spin { to { transform: rotate(360deg); } }
-  /* htmx sets [disabled] on the button while the request is in flight. */
-  button[disabled] { opacity: .6; cursor: not-allowed; }
-</style>
 <div x-data="{ tab: 'have' }">
   <div class="flex gap-2 text-sm">
     <button @click="tab='have'" :class="tab==='have' ? 'bg-green-600 text-white' : 'bg-slate-200'"
@@ -21,42 +10,8 @@
     <button @click="tab='plan'" :class="tab==='plan' ? 'bg-green-600 text-white' : 'bg-slate-200'"
             class="flex-1 rounded py-2">Planifier la semaine</button>
   </div>
-
-  <!-- HAVE -->
-  <form x-show="tab==='have'" hx-post="/cook/have" hx-target="#result" hx-indicator="#llm-spinner" hx-disabled-elt="find button" class="space-y-2 mt-4">
-    <label class="block text-sm">Temps max (min)
-      <input name="max_time" type="number" value="{{ default_time }}" class="w-full border rounded p-2"></label>
-    <label class="block text-sm">Personnes
-      <input name="servings" type="number" value="{{ servings }}" class="w-full border rounded p-2"></label>
-    <label class="block text-sm">Repas
-      <select name="meal" class="w-full border rounded p-2">
-        <option value="indifférent">Indifférent</option><option value="dejeuner">Déjeuner</option>
-        <option value="diner">Dîner</option></select></label>
-    <label class="block text-sm">Envies / précisions
-      <input name="cravings" class="w-full border rounded p-2"></label>
-    <button class="bg-green-600 text-white rounded px-4 py-2 w-full text-sm">Générer le prompt</button>
-  </form>
-
-  <!-- SHOP -->
-  <form x-show="tab==='shop'" hx-post="/cook/shop" hx-target="#result" hx-indicator="#llm-spinner" hx-disabled-elt="find button" class="space-y-2 mt-4">
-    <label class="block text-sm">Temps max (min)
-      <input name="max_time" type="number" value="{{ default_time }}" class="w-full border rounded p-2"></label>
-    <label class="block text-sm">Personnes
-      <input name="servings" type="number" value="{{ servings }}" class="w-full border rounded p-2"></label>
-    <label class="block text-sm">Ingrédients à acheter (max)
-      <input name="max_extra" type="number" value="5" class="w-full border rounded p-2"></label>
-    <label class="block text-sm">Envies / précisions
-      <input name="cravings" class="w-full border rounded p-2"></label>
-    <button class="bg-green-600 text-white rounded px-4 py-2 w-full text-sm">Générer le prompt</button>
-  </form>
-
-  <!-- PLAN (form posts to plan router, Task 17) -->
-  <div x-show="tab==='plan'" class="mt-4">{% include "partials/_plan_form.html" ignore missing %}</div>
-
-  <div id="llm-spinner" class="htmx-indicator flex items-center justify-center gap-2 text-sm text-slate-500 mt-4">
-    <span class="chefai-spinner" aria-hidden="true"></span>
-    <span>Claude réfléchit…</span>
-  </div>
-  <div id="result"></div>
+  <div x-show="tab==='have'">{{ panels['cook_have']|safe }}</div>
+  <div x-show="tab==='shop'">{{ panels['cook_shop']|safe }}</div>
+  <div x-show="tab==='plan'">{{ panels['plan']|safe }}</div>
 </div>
 {% endblock %}

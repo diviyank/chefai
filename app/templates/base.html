@@ -6,6 +6,13 @@
   <title>{% block title %}chefai{% endblock %}</title>
   <link rel="manifest" href="/static/manifest.webmanifest">
   <link rel="stylesheet" href="/static/css/app.css">
+  <style>
+    .chefai-spinner { width:1rem;height:1rem;border-radius:9999px;
+      border:2px solid #cbd5e1;border-top-color:#16a34a;display:inline-block;
+      animation:chefai-spin .7s linear infinite; }
+    @keyframes chefai-spin { to { transform: rotate(360deg); } }
+    form.htmx-request button { opacity:.55; pointer-events:none; cursor:not-allowed; }
+  </style>
   <script src="/static/vendor/htmx.min.js" defer></script>
   <script src="/static/vendor/alpine.min.js" defer></script>
   <script src="/static/js/app.js" defer></script>

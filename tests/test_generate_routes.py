@@ -50,9 +50,10 @@ def test_cook_have_direct_renders_recipe_cards(client, fake_llm):
     r = client.post("/cook/have", data={
         "max_time": "25", "cravings": "", "servings": "2", "meal": "diner"})
     assert r.status_code == 200
+    assert 'id="panel-cook_have"' in r.text
     assert "Poulet rôti" in r.text and "Salade verte" in r.text
-    assert "/cookbook/save" in r.text          # per-card save
-    assert "Générer d'autres" in r.text         # re-roll button
+    assert "/cookbook/save" in r.text
+    assert "Générer d'autres" in r.text
 
 
 def test_cook_have_reroll_sends_seen_titles_as_exclude(client, fake_llm):

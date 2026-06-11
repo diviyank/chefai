@@ -23,21 +23,27 @@ def client(session):
     def _override():
         yield session
     app.dependency_overrides[get_session] = _override
-    yield TestClient(app)
-    app.dependency_overrides.clear()
+    # Also override get_engine so jobs use the test database
+    from app import db as db_module
+    test_engine = session.get_bind()
+    original_get_engine = db_module.get_engine
+    original_engine = db_module._engine
+    db_module._engine = test_engine
+    db_module.get_engine = lambda: test_engine
+    try:
+        yield TestClient(app)
+    finally:
+        app.dependency_overrides.clear()
+        db_module.get_engine = original_get_engine
+        db_module._engine = original_engine
 
 
 @pytest.fixture
 def fake_llm(monkeypatch):
-    """Force the direct-LLM path on and stub the Anthropic call.
-
-    Set state['reply'] to a JSON string to simulate success, or to an
-    LLMError instance to simulate a failure. state['prompts'] records every
-    prompt sent (for asserting the exclude clause on re-roll)."""
-    from app import llm_client
+    from app import llm_client, jobs
     state = {"reply": "", "prompts": []}
 
-    def _complete(prompt):
+    def _complete(prompt, **kw):
         state["prompts"].append(prompt)
         if isinstance(state["reply"], Exception):
             raise state["reply"]
@@ -45,4 +51,6 @@ def fake_llm(monkeypatch):
 
     monkeypatch.setattr(llm_client, "is_configured", lambda: True)
     monkeypatch.setattr(llm_client, "complete", _complete)
+    # run background work inline so the POST response already reflects the result
+    monkeypatch.setattr(jobs, "_spawn", lambda job_id, work: jobs._run(job_id, work))
     return state

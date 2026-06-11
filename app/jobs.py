@@ -43,9 +43,11 @@ def _spawn(job_id: int, work: Callable[[], dict]) -> None:
 
 
 def start(kind: str, params: dict, prompt: str, work: Callable[[], dict],
-          runner: Callable[[int, Callable[[], dict]], None] = _spawn) -> GenerationJob:
+          runner: Callable[[int, Callable[[], dict]], None] | None = None) -> GenerationJob:
     """Insert a running row, kick off work() (threaded by default), return the row
     (detached) for immediate rendering."""
+    if runner is None:
+        runner = _spawn
     with Session(get_engine()) as s:
         job = GenerationJob(kind=kind, status="running",
                             params_json=json.dumps(params), prompt=prompt)

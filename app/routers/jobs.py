@@ -10,7 +10,7 @@ from .. import jobs
 router = APIRouter()
 
 
-def render_panel(request: Request, kind: str, job) -> HTMLResponse:
+def render_panel(request: Request, kind: str, job, **extra) -> HTMLResponse:
     """Build the template context for a panel from a job row (or None)."""
     result = json.loads(job.result_json) if job and job.result_json else None
     params = json.loads(job.params_json) if job and job.params_json else {}
@@ -22,6 +22,7 @@ def render_panel(request: Request, kind: str, job) -> HTMLResponse:
     }
     from .. import panels
     ctx.update(panels.extra_context(kind, params, result))
+    ctx.update(extra)
     return templates.TemplateResponse("partials/_panel.html", ctx)
 
 

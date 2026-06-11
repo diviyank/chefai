@@ -1,5 +1,5 @@
 {% set running = job and job.status == 'running' %}
-{% include "partials/_form_" ~ kind ~ ".html" %}
+{% include "partials/_form_" ~ kind ~ ".html" ignore missing %}
 <div class="mt-4">
   {% if running %}
     <div class="flex items-center justify-center gap-2 text-sm text-slate-500">
@@ -8,6 +8,6 @@
   {% elif job and job.status == 'error' %}
     {% include "partials/_prompt_result.html" %}
   {% elif job and job.status == 'done' %}
-    {% include "partials/_result_" ~ kind ~ ".html" %}
+    {% include "partials/_result_" ~ kind ~ ".html" ignore missing %}
   {% endif %}
 </div>

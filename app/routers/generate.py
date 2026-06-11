@@ -6,6 +6,7 @@ from ..models import PantryItem, Settings, Tool, Skill
 from .. import prompt_builder as pb
 from .. import response_parser as rp
 from .. import llm_client
+from .. import jobs, generation
 from ..main import templates
 
 router = APIRouter()
@@ -71,11 +72,12 @@ def respond_with_recipes(request: Request, session: Session, *, json_prompt: str
 
 @router.get("/cook", response_class=HTMLResponse)
 def cook_page(request: Request, session: Session = Depends(get_session)):
-    """Display the main cook page with three tabs."""
-    return templates.TemplateResponse("cook.html", {
-        "request": request, "default_time": session.get(Settings, 1).default_cook_time,
-        "servings": session.get(Settings, 1).household_size,
-    })
+    s = session.get(Settings, 1)
+    from .jobs import render_panel
+    defaults = {"default_time": s.default_cook_time, "servings_default": s.household_size}
+    panels = {k: render_panel(request, k, jobs.latest(session, k), **defaults).body.decode()
+              for k in ("cook_have", "cook_shop", "plan")}
+    return templates.TemplateResponse("cook.html", {"request": request, "panels": panels})
 
 
 @router.post("/cook/have", response_class=HTMLResponse)
@@ -83,16 +85,20 @@ def gen_have(request: Request, session: Session = Depends(get_session),
              max_time: int = Form(30), cravings: str = Form(""),
              servings: int = Form(2), meal: str = Form("indifférent"),
              exclude_titles: str = Form("")):
-    """Cook with what you have: direct 3-recipe cards, or copy-paste prompt."""
     profile, tools, skills, pantry = load_state(session)
     params = {"max_time": max_time, "cravings": cravings, "servings": servings, "meal": meal}
-    return respond_with_recipes(
-        request, session,
-        json_prompt=pb.build_cook_with_have_json(profile, tools, skills, pantry, params,
-                                                 exclude=_split_titles(exclude_titles)),
-        prose_prompt=pb.build_cook_with_have(profile, tools, skills, pantry, params),
-        reroll_to="/cook/have",
-        reroll_fields={"max_time": max_time, "cravings": cravings, "servings": servings, "meal": meal})
+    settings = session.get(Settings, 1)
+    prose = pb.build_cook_with_have(profile, tools, skills, pantry, params)
+    if not (llm_client.is_configured() and settings.use_llm_directly):
+        return _prompt_response(request, prose, show_recipe_save=True)
+    titles = _split_titles(exclude_titles)
+    json_prompt = pb.build_cook_with_have_json(profile, tools, skills, pantry, params, exclude=titles)
+    work = generation.build_cook_work("cook_have", json_prompt=json_prompt)
+    job = jobs.start("cook_have", params, prose, work)
+    # Fetch the latest job from the database (work may have already completed if inlined in tests)
+    latest_job = jobs.latest(session, "cook_have")
+    from .jobs import render_panel
+    return render_panel(request, "cook_have", latest_job)
 
 
 @router.post("/cook/shop", response_class=HTMLResponse)
