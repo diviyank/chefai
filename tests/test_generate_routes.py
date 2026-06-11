@@ -74,6 +74,13 @@ def test_cook_have_llm_failure_falls_back_to_prompt(client, fake_llm):
     assert "indisponible" in r.text.lower()       # notice
 
 
+def test_cook_shop_start_returns_running_panel(client, fake_llm):
+    fake_llm["reply"] = _THREE_RECIPES
+    r = client.post("/cook/shop", data={
+        "max_time": "30", "cravings": "", "servings": "2", "max_extra": "4"})
+    assert 'id="panel-cook_shop"' in r.text and "Poulet rôti" in r.text
+
+
 def test_cook_shop_direct_renders_cards(client, fake_llm):
     fake_llm["reply"] = _THREE_RECIPES
     r = client.post("/cook/shop", data={

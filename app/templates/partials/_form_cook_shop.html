@@ -1,0 +1,20 @@
+<form hx-post="/cook/shop" hx-target="#panel-cook_shop" hx-swap="outerHTML"
+      class="space-y-2 mt-4">
+  <label class="block text-sm">Temps max (min)
+    <input name="max_time" type="number"
+           value="{{ params.get('max_time') or default_time|default(30, true) }}"
+           class="w-full border rounded p-2"></label>
+  <label class="block text-sm">Personnes
+    <input name="servings" type="number"
+           value="{{ params.get('servings') or servings_default|default(2, true) }}"
+           class="w-full border rounded p-2"></label>
+  <label class="block text-sm">Ingrédients à acheter (max)
+    <input name="max_extra" type="number" value="{{ params.get('max_extra', 5) }}"
+           class="w-full border rounded p-2"></label>
+  <label class="block text-sm">Envies / précisions
+    <input name="cravings" value="{{ params.get('cravings', '') }}"
+           class="w-full border rounded p-2"></label>
+  <input type="hidden" name="exclude_titles" value="{{ exclude_value or '' }}">
+  <button {% if running %}disabled{% endif %}
+          class="bg-green-600 text-white rounded px-4 py-2 w-full text-sm">Générer</button>
+</form>

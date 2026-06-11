@@ -106,13 +106,16 @@ def gen_shop(request: Request, session: Session = Depends(get_session),
              max_time: int = Form(30), cravings: str = Form(""),
              servings: int = Form(2), max_extra: int = Form(5),
              exclude_titles: str = Form("")):
-    """Cook with a small shopping list: direct 3-recipe cards, or copy-paste prompt."""
     profile, tools, skills, pantry = load_state(session)
-    params = {"max_time": max_time, "cravings": cravings, "servings": servings, "max_extra": max_extra}
-    return respond_with_recipes(
-        request, session,
-        json_prompt=pb.build_cook_with_shop_json(profile, tools, skills, pantry, params,
-                                                 exclude=_split_titles(exclude_titles)),
-        prose_prompt=pb.build_cook_with_shop(profile, tools, skills, pantry, params),
-        reroll_to="/cook/shop",
-        reroll_fields={"max_time": max_time, "cravings": cravings, "servings": servings, "max_extra": max_extra})
+    params = {"max_time": max_time, "cravings": cravings, "servings": servings,
+              "max_extra": max_extra}
+    settings = session.get(Settings, 1)
+    prose = pb.build_cook_with_shop(profile, tools, skills, pantry, params)
+    if not (llm_client.is_configured() and settings.use_llm_directly):
+        return _prompt_response(request, prose, show_recipe_save=True)
+    titles = _split_titles(exclude_titles)
+    json_prompt = pb.build_cook_with_shop_json(profile, tools, skills, pantry, params, exclude=titles)
+    work = generation.build_cook_work("cook_shop", json_prompt=json_prompt)
+    jobs.start("cook_shop", params, prose, work)
+    from .jobs import render_panel
+    return render_panel(request, "cook_shop", jobs.latest(session, "cook_shop"))
