@@ -17,6 +17,8 @@ app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="stat
 @app.on_event("startup")
 def _startup() -> None:
     init_db()
+    from . import jobs
+    jobs.mark_stale_running()
     from sqlmodel import Session
     from .db import get_engine
     from .seed import seed
