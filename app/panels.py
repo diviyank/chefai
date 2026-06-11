@@ -16,6 +16,7 @@ def extra_context(kind: str, params: dict, result: dict | None) -> dict:
             "reroll_to": _REROLL[kind],
             "reroll_fields": {k: v for k, v in params.items() if k != "exclude_titles"},
             "exclude_value": _titles(recipes),
+            "panel_target": f"panel-{kind}",
         }
     if kind == "plan":
         return {"proposals": (result or {}).get("plans", [])}
