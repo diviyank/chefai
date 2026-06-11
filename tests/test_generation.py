@@ -18,3 +18,28 @@ def test_build_cook_work_returns_recipes(monkeypatch):
     work = generation.build_cook_work("cook_have", json_prompt="X")
     out = work()
     assert [r["title"] for r in out["recipes"]] == ["Poulet", "Soupe", "Salade"]
+
+
+def test_build_cook_work_forwards_cached_system_block(monkeypatch):
+    seen = {}
+
+    def fake_complete(prompt, **kw):
+        seen.update(kw)
+        return json.dumps({"recipes": [{"title": "X", "ingredients": [], "steps": []}]})
+
+    monkeypatch.setattr(llm_client, "complete", fake_complete)
+    generation.build_cook_work("cook_have", json_prompt="X", system="BASE CONTEXT")()
+    assert seen["system"] == [
+        {"type": "text", "text": "BASE CONTEXT", "cache_control": {"type": "ephemeral"}}]
+
+
+def test_build_cook_work_omits_system_when_not_given(monkeypatch):
+    seen = {}
+
+    def fake_complete(prompt, **kw):
+        seen.update(kw)
+        return json.dumps({"recipes": [{"title": "X", "ingredients": [], "steps": []}]})
+
+    monkeypatch.setattr(llm_client, "complete", fake_complete)
+    generation.build_cook_work("cook_have", json_prompt="X")()
+    assert "system" not in seen

@@ -12,21 +12,33 @@ KIND_LLM = {
 }
 
 
-def build_cook_work(kind: str, *, json_prompt: str):
-    cfg = KIND_LLM[kind]
+def _llm_kwargs(kind: str, system: str | None) -> dict:
+    """Per-kind complete() kwargs, optionally with the stable base context sent as a
+    cached system block. Caching is best-effort: Sonnet 4.6 only caches prefixes above
+    ~2048 tokens, so for small base contexts this is a silent no-op (verify via
+    usage.cache_read_input_tokens). It never changes the produced output."""
+    kw = dict(KIND_LLM[kind])
+    if system:
+        kw["system"] = [{"type": "text", "text": system,
+                         "cache_control": {"type": "ephemeral"}}]
+    return kw
+
+
+def build_cook_work(kind: str, *, json_prompt: str, system: str | None = None):
+    kw = _llm_kwargs(kind, system)
 
     def work() -> dict:
-        parsed = rp.parse_recipe_list_response(llm_client.complete(json_prompt, **cfg))
+        parsed = rp.parse_recipe_list_response(llm_client.complete(json_prompt, **kw))
         return {"recipes": [r.model_dump() for r in parsed.recipes]}
 
     return work
 
 
-def build_plan_work(*, json_prompt: str, params: dict):
-    cfg = KIND_LLM["plan"]
+def build_plan_work(*, json_prompt: str, params: dict, system: str | None = None):
+    kw = _llm_kwargs("plan", system)
 
     def work() -> dict:
-        parsed = rp.parse_plan_response(llm_client.complete(json_prompt, **cfg))
+        parsed = rp.parse_plan_response(llm_client.complete(json_prompt, **kw))
         from sqlmodel import Session
         from .db import get_engine
         from .models import PlanningSession
