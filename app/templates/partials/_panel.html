@@ -1,0 +1,8 @@
+{# Generic panel wrapper. Polls itself every 2s while the job is running; the per-kind
+   form + result live in _job_status.html. job may be None (no run yet). #}
+<div id="panel-{{ kind }}"
+     {% if job and job.status == 'running' %}
+     hx-get="/jobs/{{ kind }}/panel" hx-trigger="every 2s" hx-target="this" hx-swap="outerHTML"
+     {% endif %}>
+  {% include "partials/_job_status.html" %}
+</div>

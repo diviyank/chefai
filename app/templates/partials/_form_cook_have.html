@@ -1,0 +1,5 @@
+<form hx-post="/cook/have" hx-target="#panel-cook_have" hx-swap="outerHTML"
+      class="space-y-2 mt-4">
+  <button {% if running %}disabled{% endif %}
+          class="bg-green-600 text-white rounded px-4 py-2 w-full text-sm">Générer</button>
+</form>

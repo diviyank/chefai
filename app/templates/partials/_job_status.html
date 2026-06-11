@@ -1,0 +1,13 @@
+{% set running = job and job.status == 'running' %}
+{% include "partials/_form_" ~ kind ~ ".html" %}
+<div class="mt-4">
+  {% if running %}
+    <div class="flex items-center justify-center gap-2 text-sm text-slate-500">
+      <span class="chefai-spinner" aria-hidden="true"></span><span>Claude réfléchit…</span>
+    </div>
+  {% elif job and job.status == 'error' %}
+    {% include "partials/_prompt_result.html" %}
+  {% elif job and job.status == 'done' %}
+    {% include "partials/_result_" ~ kind ~ ".html" %}
+  {% endif %}
+</div>

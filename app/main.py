@@ -28,7 +28,7 @@ def _startup() -> None:
 
 def register_routers() -> None:
     from importlib import import_module
-    for name in ("home", "pantry", "generate", "plan", "shopping", "cookbook", "settings"):
+    for name in ("home", "pantry", "generate", "plan", "shopping", "cookbook", "settings", "jobs"):
         if not (BASE_DIR / "routers" / f"{name}.py").exists():
             continue
         module = import_module(f"app.routers.{name}")
