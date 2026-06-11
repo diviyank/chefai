@@ -93,3 +93,43 @@ def test_complete_wraps_sdk_failure_as_llm_error(monkeypatch):
     monkeypatch.setattr(llm_client, "_client", lambda: _BoomClient())
     with pytest.raises(llm_client.LLMError):
         llm_client.complete("salut")
+
+
+class _CapturingMessages:
+    def __init__(self):
+        self.kwargs = None
+
+    def stream(self, **kwargs):
+        self.kwargs = kwargs
+        return _FakeStream()
+
+
+class _CapturingClient:
+    def __init__(self):
+        self.messages = _CapturingMessages()
+
+    def with_options(self, **kwargs):
+        return self
+
+
+def test_complete_forwards_overrides(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
+    cap = _CapturingClient()
+    monkeypatch.setattr(llm_client, "_client", lambda: cap)
+    llm_client.complete("hi", model="claude-haiku-4-5", max_tokens=1500,
+                        thinking=None, effort="low", system="ctx")
+    k = cap.messages.kwargs
+    assert k["model"] == "claude-haiku-4-5"
+    assert k["max_tokens"] == 1500
+    assert "thinking" not in k                      # thinking=None -> omitted
+    assert k["output_config"] == {"effort": "low"}
+    assert k["system"] == "ctx"
+
+
+def test_complete_defaults_to_adaptive_thinking(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
+    cap = _CapturingClient()
+    monkeypatch.setattr(llm_client, "_client", lambda: cap)
+    llm_client.complete("hi")
+    assert cap.messages.kwargs["thinking"] == {"type": "adaptive"}
+    assert "output_config" not in cap.messages.kwargs

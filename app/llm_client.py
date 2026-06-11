@@ -32,18 +32,33 @@ def _client():
     return Anthropic()
 
 
-def complete(prompt: str) -> str:
-    """Send one user message, return the concatenated text reply. Raises LLMError."""
+_DEFAULT = object()
+
+
+def complete(prompt: str, *, model: str = None, max_tokens: int = None,
+             thinking=_DEFAULT, effort: str = None, system=None) -> str:
+    """Send one user message, return the concatenated text reply. Raises LLMError.
+
+    Keyword overrides let callers tune per-kind cost/latency. thinking defaults to
+    adaptive; pass thinking=None to omit it (e.g. Haiku). effort/system are sent only
+    when provided."""
     if not is_configured():
         raise LLMError("ANTHROPIC_API_KEY non configurée")
+    kwargs = {
+        "model": model or get_model(),
+        "max_tokens": max_tokens or MAX_TOKENS,
+        "messages": [{"role": "user", "content": prompt}],
+    }
+    resolved_thinking = {"type": "adaptive"} if thinking is _DEFAULT else thinking
+    if resolved_thinking is not None:
+        kwargs["thinking"] = resolved_thinking
+    if effort is not None:
+        kwargs["output_config"] = {"effort": effort}
+    if system is not None:
+        kwargs["system"] = system
     try:
         client = _client().with_options(timeout=get_timeout())
-        with client.messages.stream(
-            model=get_model(),
-            max_tokens=MAX_TOKENS,
-            thinking={"type": "adaptive"},
-            messages=[{"role": "user", "content": prompt}],
-        ) as stream:
+        with client.messages.stream(**kwargs) as stream:
             message = stream.get_final_message()
     except Exception as exc:  # SDK APIError, network, etc. -> uniform LLMError
         raise LLMError(str(exc)) from exc
