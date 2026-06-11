@@ -1,11 +1,13 @@
+import json
 from fastapi import APIRouter, Depends, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlmodel import Session, select
 from ..db import get_session
-from ..models import PlanningSession, Meal, ShoppingItem, Settings
+from ..models import PlanningSession, Meal, ShoppingItem, Settings, GenerationJob
 from .. import prompt_builder as pb
 from .. import response_parser as rp
 from .. import llm_client
+from .. import jobs, generation
 from .generate import load_state, _prompt_response, FALLBACK_NOTICE
 from ..main import templates
 
@@ -20,19 +22,13 @@ def plan_generate(request: Request, session: Session = Depends(get_session),
     params = {"n_days": n_days, "lunch": bool(lunch), "dinner": bool(dinner),
               "leftovers": bool(leftovers), "servings": servings, "cravings": cravings}
     settings = session.get(Settings, 1)
+    prose = pb.build_plan(profile, tools, skills, pantry, params)
     if not (llm_client.is_configured() and settings.use_llm_directly):
-        return _prompt_response(request, pb.build_plan(profile, tools, skills, pantry, params))
-    try:
-        parsed = rp.parse_plan_response(llm_client.complete(pb.build_plan(profile, tools, skills, pantry, params)))
-    except (llm_client.LLMError, rp.ParseError):
-        return _prompt_response(request, pb.build_plan(profile, tools, skills, pantry, params),
-                                notice=FALLBACK_NOTICE)
-    ps = PlanningSession(params_json=params,
-                         proposals_json=[p.model_dump() for p in parsed.plans], status="proposed")
-    session.add(ps); session.commit(); session.refresh(ps)
-    return templates.TemplateResponse("partials/_plan_proposals_cards.html",
-                                      {"request": request, "ps": ps, "plans": ps.proposals_json,
-                                       "reroll": True})
+        return _prompt_response(request, prose)
+    work = generation.build_plan_work(json_prompt=prose, params=params)
+    jobs.start("plan", params, prose, work)
+    from .jobs import render_panel
+    return render_panel(request, "plan", jobs.latest(session, "plan"), session=session)
 
 
 def _plan_meal_titles(proposals: list) -> list[str]:
@@ -74,9 +70,16 @@ def plan_parse(request: Request, session: Session = Depends(get_session), raw: s
             {"request": request, "message": str(exc)}, status_code=200)
     ps = PlanningSession(
         params_json={}, proposals_json=[p.model_dump() for p in parsed.plans], status="proposed")
-    session.add(ps); session.commit(); session.refresh(ps)
-    return templates.TemplateResponse("plan_proposals.html",
-                                      {"request": request, "ps": ps, "plans": ps.proposals_json})
+    session.add(ps)
+    session.commit()
+    session.refresh(ps)
+    job = GenerationJob(kind="plan", status="done", params_json="{}", prompt="",
+                        result_json=json.dumps({"ps_id": ps.id}))
+    session.add(job)
+    session.commit()
+    session.refresh(job)
+    from .jobs import render_panel
+    return render_panel(request, "plan", job, session=session)
 
 
 @router.post("/plan/{ps_id}/validate")

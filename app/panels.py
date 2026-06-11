@@ -19,5 +19,5 @@ def extra_context(kind: str, params: dict, result: dict | None) -> dict:
             "panel_target": f"panel-{kind}",
         }
     if kind == "plan":
-        return {"proposals": (result or {}).get("plans", [])}
+        return {}
     return {}

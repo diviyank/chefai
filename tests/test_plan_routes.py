@@ -14,6 +14,7 @@ PLAN_JSON = '''```json
 
 
 def test_plan_generate_prompt(client):
+    # When LLM is disabled (default in tests), plan_generate returns the copy-paste prompt
     r = client.post("/plan/generate", data={"n_days": "3", "lunch": "on", "dinner": "on",
                                              "leftovers": "on", "servings": "2", "cravings": ""})
     assert r.status_code == 200
@@ -29,6 +30,9 @@ def test_plan_generate_prompt(client):
 def test_paste_back_stores_three_proposals(client, session):
     r = client.post("/plan/parse", data={"raw": PLAN_JSON})
     assert r.status_code == 200
+    assert 'id="panel-plan"' in r.text
+    # proposals should be rendered (check for titles from PLAN_JSON)
+    assert "Curry" in r.text and "Soupe" in r.text and "Pâtes" in r.text
     ps = session.exec(select(PlanningSession)).all()
     assert len(ps) == 1 and len(ps[0].proposals_json) == 3
 
@@ -113,6 +117,7 @@ def test_plan_generate_direct_renders_proposal_cards(client, session, fake_llm):
         "n_days": "3", "lunch": "on", "dinner": "on", "leftovers": "on",
         "servings": "2", "cravings": ""})
     assert r.status_code == 200
+    assert 'id="panel-plan"' in r.text
     assert "Risotto" in r.text and "Tajine" in r.text
     assert "Valider ce plan" in r.text and "Générer d'autres plans" in r.text
 

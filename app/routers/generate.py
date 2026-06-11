@@ -75,7 +75,7 @@ def cook_page(request: Request, session: Session = Depends(get_session)):
     s = session.get(Settings, 1)
     from .jobs import render_panel
     defaults = {"default_time": s.default_cook_time, "servings_default": s.household_size}
-    panels = {k: render_panel(request, k, jobs.latest(session, k), **defaults).body.decode()
+    panels = {k: render_panel(request, k, jobs.latest(session, k), session=session, **defaults).body.decode()
               for k in ("cook_have", "cook_shop", "plan")}
     return templates.TemplateResponse("cook.html", {"request": request, "panels": panels})
 

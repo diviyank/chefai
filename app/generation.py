@@ -22,11 +22,22 @@ def build_cook_work(kind: str, *, json_prompt: str):
     return work
 
 
-def build_plan_work(*, json_prompt: str):
+def build_plan_work(*, json_prompt: str, params: dict):
     cfg = KIND_LLM["plan"]
 
     def work() -> dict:
         parsed = rp.parse_plan_response(llm_client.complete(json_prompt, **cfg))
-        return parsed.model_dump()
+        from sqlmodel import Session
+        from .db import get_engine
+        from .models import PlanningSession
+        with Session(get_engine()) as s:
+            ps = PlanningSession(
+                params_json=params,
+                proposals_json=[p.model_dump() for p in parsed.plans],
+                status="proposed")
+            s.add(ps)
+            s.commit()
+            s.refresh(ps)
+            return {"ps_id": ps.id}
 
     return work
